@@ -14,16 +14,33 @@
  */
 'use strict';
 
-import {ImsApiConfig} from './ims/imsapi-config';
-import {CodenvyApiConfig} from './api/codenvy-api-config';
-import {UniqueTeamNameValidator} from './api/validator/unique-team-name-validator.directive';
+/**
+ * @ngdoc directive
+ * @name teams.invite.members:ListMembers
+ * @restrict E
+ * @element
+ *
+ * @description
+ * `<list-members members="ctrl.members"></list-members>` for displaying list of members
+ *
+ * @usage
+ *   <list-members members="ctrl.members"></list-members>
+ *
+ * @author Ann Shumilova
+ */
+export class ListMembers implements ng.IDirective {
 
-export class CodenvyComponentsConfig {
+  restrict = 'E';
+  templateUrl = 'app/teams/invite-members/list-members.html';
 
-  constructor(register) {
-    new ImsApiConfig(register);
-    new CodenvyApiConfig(register);
+  controller = 'ListMembersController';
+  controllerAs = 'listMembersController';
+  bindToController = true;
 
-    register.directive('uniqueTeamName', UniqueTeamNameValidator);
+  scope = {
+    members: '='
+  };
+
+  constructor () {
   }
 }

@@ -1,0 +1,29 @@
+<md-dialog flex="50"
+           class="add-member-dialog-content">
+  <ng-form flex layout="column" name="addMemberForm">
+    <che-label-container che-label-name="Email">
+      <div class="add-member-dialog-input">
+        <che-input che-form="addMemberForm"
+                   che-name="email"
+                   che-place-holder="Enter email"
+                   ng-model="addMemberController.email"
+                   type="number"
+                   aria-label="New member"
+                   required>
+          <div ng-message="required">A user email is required.</div>
+        </che-input>
+      </div>
+    </che-label-container>
+
+    <che-label-container>
+      <div layout="row">
+        <che-button-primary che-button-title="Add"
+                            ng-disabled="addPortForm.$invalid || addPortDialogController.updateInProgress"
+                            ng-click="addPortDialogController.addPort()"></che-button-primary>
+        <che-button-notice che-button-title="Cancel"
+                           ng-click="addPortDialogController.hide()"
+                           tabindex="0"></che-button-notice>
+      </div>
+    </che-label-container>
+  </ng-form>
+</md-dialog>

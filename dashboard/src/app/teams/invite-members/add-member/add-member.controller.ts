@@ -15,42 +15,37 @@
 'use strict';
 
 /**
- * This class is handling the interactions with
- * Team management API.
- *
+ * @ngdoc controller
+ * @name teams.invite.members:AddMemberController
+ * @description This class is handling the controller for adding members dialog.
  * @author Ann Shumilova
  */
-export class CodenvyTeam {
+export class AddMemberController {
 
-  private teamsMap = new Map();
+  $mdDialog: angular.material.IDialogService;
 
   /**
    * Default constructor that is using resource
    * @ngInject for Dependency injection
    */
-  constructor($q, $resource) {
-    this.remoteTeamAPI = this.$resource('/api/organization', {}, {
-      getTeams: {method: 'GET', url: '/api/organization', isArray: true}
-    });
+  constructor($mdDialog) {
+    this.$mdDialog = $mdDialog;
   }
 
   /**
-   *
-   * @returns {any}
+   * Hides the add member dialog.
    */
-  fetchTeams() {
-    let promise = this.remoteTeamAPI.getTeams().$promise;
+  hide() {
+    this.$mdDialog.hide();
+  }
 
-    let resultPromise = promise.then((teams) => {
-      teams.forEach((team) => {
-        this.teamsMap.set(team.id, team);
-      });
+  /**
+   * Adds new port
+   */
+  addMember() {
+    this.callbackController.addMember(this.email).finally(() => {
+      this.hide();
     });
-
-    return resultPromise;
   }
 
-  getTeams() {
-    return this.teamsMap;
-  }
 }
