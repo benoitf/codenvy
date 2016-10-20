@@ -14,6 +14,8 @@
  */
 'use strict';
 
+import {CodenvyTeamRoles} from '../../../../components/api/codenvy-team-roles';
+
 /**
  * @ngdoc controller
  * @name teams.invite.members:AddMemberController

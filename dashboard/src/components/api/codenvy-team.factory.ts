@@ -14,6 +14,8 @@
  */
 'use strict';
 
+import {CodenvyTeamRoles} from './codenvy-team-roles';
+
 /**
  * This class is handling the interactions with
  * Team management API.
@@ -64,5 +66,11 @@ export class CodenvyTeam {
     let data = {'name' : name};
     let promise = this.remoteTeamAPI.createTeam(data).$promise;
     return promise;
+  }
+
+  getRolesFromActions(roles) {
+  }
+
+  getActionsFromRoles(actions) {
   }
 }

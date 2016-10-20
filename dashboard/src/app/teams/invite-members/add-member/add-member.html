@@ -7,23 +7,41 @@
                    che-name="email"
                    che-place-holder="Enter email"
                    ng-model="addMemberController.email"
-                   type="number"
+                   type="email"
                    aria-label="New member"
                    required>
           <div ng-message="required">A user email is required.</div>
+          <div ng-message="email">Invalid email address.</div>
         </che-input>
       </div>
     </che-label-container>
-
-    <che-label-container>
+    <che-label-container che-label-name="Permissions" che-label-description="Allowed actions of team member">
       <div layout="row">
-        <che-button-primary che-button-title="Add"
-                            ng-disabled="addPortForm.$invalid || addPortDialogController.updateInProgress"
-                            ng-click="addPortDialogController.addPort()"></che-button-primary>
-        <che-button-notice che-button-title="Cancel"
-                           ng-click="addPortDialogController.hide()"
-                           tabindex="0"></che-button-notice>
+        <div layout="column" flex="50">
+          <md-switch>
+            Manage team
+          </md-switch>
+          <md-switch>
+            Manage resources
+          </md-switch>
+        </div>
+        <div layout="column" flex="50">
+          <md-switch>
+            Manage workspaces
+          </md-switch>
+          <md-switch>
+            Create workspaces
+          </md-switch>
+        </div>
       </div>
     </che-label-container>
   </ng-form>
+  <div layout="row" layout-align="end center">
+    <che-button-primary che-button-title="Add"
+                        ng-disabled="addMemberForm.$invalid"
+                        ng-click="addMemberController.addMember()"></che-button-primary>
+    <che-button-cancel-flat che-button-title="Cancel"
+                       ng-click="addMemberController.hide()"
+                       tabindex="0"></che-button-cancel-flat>
+  </div>
 </md-dialog>

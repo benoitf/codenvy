@@ -41,7 +41,6 @@ export class ListMembersController {
    * Update members selected status
    */
   updateSelectedStatus() {
-    debugger;
     this.membersSelectedNumber = 0;
     this.isBulkChecked = !!this.members.length;
     this.members.forEach((member) => {
@@ -112,45 +111,19 @@ export class ListMembersController {
         members: this.members,
         callbackController: this
       },
-      templateUrl: 'app/teams/invite-teams/add-member/add-member.html'
+      templateUrl: 'app/teams/invite-members/add-member/add-member.html'
     });
   }
 
   /**
    * Removes selected members
    */
-  deleteSelectedMembers() {
-   /* this.showDeleteConfirmation(this.serversSelectedNumber).then(() => {
-      this.lodash.forEach(this.serversSelectedStatus, (server, name) => {
-        delete this.servers[name];
-      });
-      this.deselectAllPorts();
-      this.isBulkChecked = false;
-      this.serversOnChange().then(() => {this.buildServersList();});
-    })*/
+  removeSelectedMembers() {
+    this.lodash.remove(this.members, (member) => {
+      return this.membersSelectedStatus[member.email];
+    });
+
+    this.deselectAllMembers();
+    this.isBulkChecked = false;
   }
-
-  /**
-   * Show confirmation popup before member to delete
-   * @param numberToDelete
-   * @returns {*}
-   */
-  showDeleteConfirmation(numberToDelete) {
- /*   let confirmTitle = 'Would you like to delete ';
-    if (numberToDelete > 1) {
-      confirmTitle += 'these ' + numberToDelete + ' ports?';
-    }
-    else {
-      confirmTitle += 'this selected port?';
-    }
-    let confirm = this.$mdDialog.confirm()
-      .title(confirmTitle)
-      .ariaLabel('Remove port')
-      .ok('Delete!')
-      .cancel('Cancel')
-      .clickOutsideToClose(true);
-
-    return this.$mdDialog.show(confirm);*/
-  }
-
 }
