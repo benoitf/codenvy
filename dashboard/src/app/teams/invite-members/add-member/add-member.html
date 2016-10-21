@@ -18,19 +18,13 @@
     <che-label-container che-label-name="Permissions" che-label-description="Allowed actions of team member">
       <div layout="row">
         <div layout="column" flex="50">
-          <md-switch>
-            Manage team
-          </md-switch>
-          <md-switch>
-            Manage resources
+          <md-switch ng-repeat="roleInfo in addMemberController.roles" ng-model="roleInfo.allowed" ng-if="$index % 2 === 1">
+            {{roleInfo.role.title}}
           </md-switch>
         </div>
         <div layout="column" flex="50">
-          <md-switch>
-            Manage workspaces
-          </md-switch>
-          <md-switch>
-            Create workspaces
+          <md-switch ng-repeat="roleInfo in addMemberController.roles" ng-model="roleInfo.allowed" ng-if="$index % 2 === 0">
+            {{roleInfo.role.title}}
           </md-switch>
         </div>
       </div>

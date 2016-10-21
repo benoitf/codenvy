@@ -31,7 +31,9 @@ export class CodenvyTeam {
    * Default constructor that is using resource
    * @ngInject for Dependency injection
    */
-  constructor($resource) {
+  constructor($resource, lodash) {
+    this.lodash = lodash;
+
     this.remoteTeamAPI = $resource('/api/organization', {}, {
       getTeams: {method: 'GET', url: '/api/organization', isArray: true},
       createTeam: {method: 'POST', url: '/api/organization'}
@@ -68,9 +70,24 @@ export class CodenvyTeam {
     return promise;
   }
 
-  getRolesFromActions(roles) {
+  getRolesFromActions(actions) {
+    let roles = [];
+    let teamRoles = CodenvyTeamRoles.getValues();
+    teamRoles.forEach((role) => {
+      if (this.lodash.difference(role.actions, actions).length === 0) {
+        roles.push(role);
+      }
+    });
+    return roles;
   }
 
-  getActionsFromRoles(actions) {
+
+  getActionsFromRoles(roles) {
+    let actions = [];
+    roles.forEach(role => {
+      actions = actions.concat(role.actions);
+    });
+
+    return actions;
   }
 }

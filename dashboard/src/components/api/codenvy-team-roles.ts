@@ -24,4 +24,8 @@ export enum CodenvyTeamRoles {
   MANAGE_RESOURCES = <any> {'title': 'Manage resources', 'actions' : ['manageResources']},
   MANAGE_WORKSPACES = <any> {'title': 'Manage workspaces', 'actions' : ['manageWorkspaces']},
   CREATE_WORKSPACES = <any> {'title': 'Create workspaces', 'actions' : ['createWorkspaces']}
+
+  getValues() {
+    return [MANAGE_TEAM, MANAGE_RESOURCES, MANAGE_WORKSPACES, CREATE_WORKSPACES];
+  }
 }

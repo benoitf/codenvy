@@ -30,8 +30,16 @@ export class AddMemberController {
    * Default constructor that is using resource
    * @ngInject for Dependency injection
    */
-  constructor($mdDialog) {
+  constructor($mdDialog, codenvyTeam, codenvyUser) {
     this.$mdDialog = $mdDialog;
+    this.codenvyTeam = codenvyTeam;
+    this.codenvyUser = codenvyUser;
+
+    this.roles = [];
+    this.roles.push({'role' : CodenvyTeamRoles.MANAGE_WORKSPACES, 'allowed' : true});
+    this.roles.push({'role' : CodenvyTeamRoles.MANAGE_TEAM, 'allowed' : false});
+    this.roles.push({'role' : CodenvyTeamRoles.CREATE_WORKSPACES, 'allowed' : true});
+    this.roles.push({'role' : CodenvyTeamRoles.MANAGE_RESOURCES, 'allowed' : false});
   }
 
   /**
@@ -45,9 +53,29 @@ export class AddMemberController {
    * Adds new port
    */
   addMember() {
-    this.callbackController.addMember(this.email).finally(() => {
-      this.hide();
+    let userRoles = [];
+    this.roles.forEach(roleInfo => {
+      if (roleInfo.allowed) {
+        userRoles.push(roleInfo.role);
+      }
     });
+
+    let user = {};
+    user.email = this.email;
+    let findUser = this.codenvyUser.fetchUserByAlias(this.email).then(() => {
+      user = this.codenvyUser.getUserByAlias(this.email);
+      this.finishAdding(user, userRoles);
+    }, (error) => {
+      this.finishAdding(user, userRoles);
+    });
+
+
+    this.hide();
+  }
+
+  finishAdding(user, roles) {
+    this.callbackController.addMember(user, roles);
+    this.hide();
   }
 
 }

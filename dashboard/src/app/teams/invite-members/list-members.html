@@ -69,22 +69,31 @@
                class="che-list-item-details">
             <div flex="20"
                  class="che-list-item-name">
+              <span class="material-design icon-ic_done_24px user-exists-checked" ng-if="member.id"></span>
               <span class="che-hover">{{member.email}}</span>
             </div>
             <div flex="20">
-              <md-switch ng-model="listMembersController.isNoSelected" aria-label="{{member}}" class="permission-switcher">
+              <md-switch ng-model="listMembersController.memberRoles[member.email].isManageTeam"
+                         ng-change="listMembersController.onRolesChanged(member)"
+                         aria-label="{{member}} manage team" class="permission-switcher">
               </md-switch>
             </div>
             <div flex="20">
-              <md-switch ng-model="listMembersController.isNoSelected" aria-label="{{member}}" class="permission-switcher">
+              <md-switch ng-model="listMembersController.memberRoles[member.email].isManageResources"
+                         ng-change="listMembersController.onRolesChanged(member)"
+                         aria-label="{{member}} manage resources" class="permission-switcher">
               </md-switch>
             </div>
             <div flex="20">
-              <md-switch ng-model="listMembersController.isNoSelected" aria-label="{{member}}" class="permission-switcher">
+              <md-switch ng-model="listMembersController.memberRoles[member.email].isManageWorkspaces"
+                         ng-change="listMembersController.onRolesChanged(member)"
+                         aria-label="{{member}} manage workspaces" class="permission-switcher">
               </md-switch>
             </div>
             <div flex="20">
-              <md-switch ng-model="listMembersController.isNoSelected" aria-label="{{member}}" class="permission-switcher">
+              <md-switch ng-model="listMembersController.memberRoles[member.email].isCreateWorkspaces"
+                         ng-change="listMembersController.onRolesChanged(member)"
+                         aria-label="{{member}} create workspaces" class="permission-switcher">
               </md-switch>
             </div>
           </div>

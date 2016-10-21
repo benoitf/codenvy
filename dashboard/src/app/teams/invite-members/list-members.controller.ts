@@ -13,6 +13,7 @@
  * from Codenvy S.A..
  */
 'use strict';
+import {CodenvyTeamRoles} from '../../../components/api/codenvy-team-roles';
 
 /**
  * @ngdoc controller
@@ -26,15 +27,50 @@ export class ListMembersController {
    * Default constructor that is using resource
    * @ngInject for Dependency injection
    */
-  constructor($mdDialog, lodash) {
+  constructor($mdDialog, lodash, codenvyTeam) {
     this.$mdDialog = $mdDialog;
     this.lodash = lodash;
+    this.codenvyTeam = codenvyTeam;
 
     this.isNoSelected = true;
     this.isBulkChecked = false;
     this.membersSelectedStatus = {};
     this.membersSelectedNumber = 0;
-    this.membersOrderBy = 'name';
+    this.membersOrderBy = 'email';
+    this.memberRoles = {};
+  }
+
+  buildMembersList() {
+    this.memberRoles = {};
+    this.members.forEach(member => {
+      let roles = {};
+      roles.isManageTeam = member.roles.indexOf(CodenvyTeamRoles.MANAGE_TEAM) >= 0;
+      roles.isManageResources = member.roles.indexOf(CodenvyTeamRoles.MANAGE_RESOURCES) >= 0;
+      roles.isManageWorkspaces = member.roles.indexOf(CodenvyTeamRoles.MANAGE_WORKSPACES) >= 0;
+      roles.isCreateWorkspaces = member.roles.indexOf(CodenvyTeamRoles.CREATE_WORKSPACES) >= 0;
+      this.memberRoles[member.email] = roles;
+    });
+  }
+
+  onRolesChanged(member) {
+    let roles = [];
+    let rolesInfo = this.memberRoles[member.email];
+    if (rolesInfo.isManageTeam) {
+      roles.push(CodenvyTeamRoles.MANAGE_TEAM);
+    }
+
+    if (rolesInfo.isManageResources) {
+      roles.push(CodenvyTeamRoles.MANAGE_RESOURCES);
+    }
+
+    if (rolesInfo.isManageWorkspaces) {
+      roles.push(CodenvyTeamRoles.MANAGE_WORKSPACES);
+    }
+
+    if (rolesInfo.isCreateWorkspaces) {
+      roles.push(CodenvyTeamRoles.CREATE_WORKSPACES);
+    }
+    member.roles = roles;
   }
 
   /**
@@ -88,12 +124,10 @@ export class ListMembersController {
     this.membersSelectedNumber = 0;
   }
 
-  addMember() {
- /*   let name = this.buildServerName(port);
-    this.servers[name] = {'port': port, 'protocol': protocol};
-
-    this.updateSelectedStatus();
-    return this.serversOnChange().then(() => {this.buildServersList();});*/
+  addMember(user, roles) {
+    user.roles = roles;
+    this.members.push(user);
+    this.buildMembersList();
   }
 
   /**
@@ -122,7 +156,7 @@ export class ListMembersController {
     this.lodash.remove(this.members, (member) => {
       return this.membersSelectedStatus[member.email];
     });
-
+    this.buildMembersList();
     this.deselectAllMembers();
     this.isBulkChecked = false;
   }
