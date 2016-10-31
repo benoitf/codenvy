@@ -31,8 +31,9 @@ export class CodenvyTeam {
    * Default constructor that is using resource
    * @ngInject for Dependency injection
    */
-  constructor($resource, lodash) {
+  constructor($resource, lodash, cheNamespaceRegistry) {
     this.lodash = lodash;
+    this.cheNamespaceRegistry = cheNamespaceRegistry;
 
     this.remoteTeamAPI = $resource('/api/organization', {}, {
       getTeams: {method: 'GET', url: '/api/organization', isArray: true},
@@ -50,10 +51,12 @@ export class CodenvyTeam {
     let resultPromise = promise.then((teams) => {
       this.teamsMap = new Map();
       this.teams = [];
+      this.cheNamespaceRegistry.getNamespaces().length = 0;
 
       teams.forEach((team) => {
         this.teamsMap.set(team.id, team);
         this.teams.push(team);
+        this.cheNamespaceRegistry.getNamespaces().push(team.name);
       });
     });
 

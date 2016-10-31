@@ -42,7 +42,6 @@ export class UniqueTeamNameValidator {
 
       ngModel.$asyncValidators.uniqueTeamName = (modelValue) => {
 
-        // create promise
         var deferred = this.$q.defer();
 
         // parent scope ?

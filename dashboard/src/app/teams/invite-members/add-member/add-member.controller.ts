@@ -35,11 +35,18 @@ export class AddMemberController {
     this.codenvyTeam = codenvyTeam;
     this.codenvyUser = codenvyUser;
 
+    this.isProcessing = false;
+
     this.roles = [];
     this.roles.push({'role' : CodenvyTeamRoles.MANAGE_WORKSPACES, 'allowed' : true});
     this.roles.push({'role' : CodenvyTeamRoles.MANAGE_TEAM, 'allowed' : false});
     this.roles.push({'role' : CodenvyTeamRoles.CREATE_WORKSPACES, 'allowed' : true});
     this.roles.push({'role' : CodenvyTeamRoles.MANAGE_RESOURCES, 'allowed' : false});
+
+    this.emails = [];
+    this.members.forEach(member => {
+      this.emails.push(member.email);
+    });
   }
 
   /**
@@ -47,6 +54,10 @@ export class AddMemberController {
    */
   hide() {
     this.$mdDialog.hide();
+  }
+
+  isUnique(email) {
+    return this.emails.indexOf(email) < 0;
   }
 
   /**
@@ -60,20 +71,26 @@ export class AddMemberController {
       }
     });
 
-    let user = {};
+    let user = this.codenvyUser.getUserByAlias(this.email);
+    if (user) {
+      this.finishAdding(user, userRoles);
+      return;
+    }
+
+    user = {};
     user.email = this.email;
+    this.isProcessing = true;
+
     let findUser = this.codenvyUser.fetchUserByAlias(this.email).then(() => {
       user = this.codenvyUser.getUserByAlias(this.email);
       this.finishAdding(user, userRoles);
     }, (error) => {
       this.finishAdding(user, userRoles);
     });
-
-
-    this.hide();
   }
 
   finishAdding(user, roles) {
+    this.isProcessing = false;
     this.callbackController.addMember(user, roles);
     this.hide();
   }

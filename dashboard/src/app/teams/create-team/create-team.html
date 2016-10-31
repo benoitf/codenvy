@@ -20,7 +20,6 @@
 <che-toolbar che-title="Create New Team" border-none></che-toolbar>
 <che-description>
   Create a team to share workspaces securely with others.
-  A new workspace will be created at Codenvy with permissions for your team.
 </che-description>
 <md-progress-linear md-mode="indeterminate" class="create-team-progress"
                     ng-show="createTeamController.isLoading"></md-progress-linear>
@@ -39,7 +38,7 @@
                    ng-minlength="3"
                    ng-maxlength="20"
                    unique-team-name="createTeamController.teamName"
-                   ng-pattern="/^[A-Za-z0-9]+$/">
+                   ng-pattern="/^[A-Za-z0-9]+$/" required focusable>
           <div ng-message="required">A team name is required.</div>
           <div ng-message="pattern">Team name must contain only letters and digits.
           </div>
@@ -52,7 +51,7 @@
 
     <che-label-container che-label-name="Owner" che-label-description="Can set permissions and share resources.">
 
-      <div layout="column" class="create-team-input">
+      <div layout="column">
         <che-input-box che-form="createTeamForm"
                    che-name="owner"
                    che-place-holder="Enter team owner"
@@ -68,8 +67,9 @@
         </che-input-box>
       </div>
     </che-label-container>
-    <che-label-container che-label-name="Developers" che-label-description="Invite others to collaborate on the workspace.">
-      <list-members members="createTeamController.members"></list-members>
+    <che-label-container che-label-name="Developers" che-label-description="Invite others to collaborate on the workspace."
+      che-alignment="{{createTeamController.members.length > 0 ? 'column' : 'row'}}">
+      <list-members members="createTeamController.members" class="create-team-list"></list-members>
     </che-label-container>
   </ng-form>
 

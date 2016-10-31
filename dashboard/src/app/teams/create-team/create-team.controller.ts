@@ -31,15 +31,16 @@ export class CreateTeamController {
    * Default constructor
    * @ngInject for Dependency injection
    */
-  constructor(codenvyTeam, codenvyUser, codenvyPermissions, cheNotification, $location, $q) {
+  constructor(codenvyTeam, codenvyUser, codenvyPermissions, cheNotification, $location, $q, lodash) {
     this.codenvyTeam = codenvyTeam;
     this.codenvyUser = codenvyUser;
     this.codenvyPermissions = codenvyPermissions;
     this.cheNotification = cheNotification;
     this.$location = $location;
     this.$q = $q;
+    this.lodash = lodash;
 
-    this.teamName = 'MyTeam';
+    this.teamName = this.generateTeamName('Team');
     this.isLoading = true;
     this.members = [];
 
@@ -61,6 +62,26 @@ export class CreateTeamController {
     }
   }
 
+  generateTeamName(name) {
+    let teams = this.codenvyTeam.getTeams();
+
+    if (teams && teams.size === 0) {
+      return name;
+    }
+    let existingNames = this.lodash.pluck(teams, 'name');
+
+    if (existingNames.indexOf(name) < 0) {
+      return name;
+    }
+
+    let generatedName = name;
+    let counter = 1;
+    while (existingNames.indexOf(generatedName) >= 0) {
+      generatedName = name + counter++;
+    }
+    return generatedName;
+  }
+
   createTeam() {
     this.isLoading = true;
     this.codenvyTeam.createTeam(this.teamName).then((data) => {
@@ -77,14 +98,16 @@ export class CreateTeamController {
     let promises = [];
 
     members.forEach(member => {
-      let permissions = {};
-      permissions.instanceId = data.id;
-      permissions.userId = member.id;
-      permissions.domainId = 'organization'; //TODO
-      permissions.actions = this.codenvyTeam.getActionsFromRoles(member.roles);
+      if (member.id) {
+        let permissions = {};
+        permissions.instanceId = data.id;
+        permissions.userId = member.id;
+        permissions.domainId = 'organization'; //TODO
+        permissions.actions = this.codenvyTeam.getActionsFromRoles(member.roles);
 
-      let promise = this.codenvyPermissions.storePermissions(permissions);
-      promises.push(promise);
+        let promise = this.codenvyPermissions.storePermissions(permissions);
+        promises.push(promise);
+      }
     });
 
      this.$q.all(promises).then(() => {
