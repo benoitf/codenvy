@@ -25,7 +25,7 @@ export class CreateTeamController {
 
   codenvyTeam: CodenvyTeam;
   codenvyUser: CodenvyUser;
-  codenvyPersmissions: CodenvyPersmissions;
+  codenvyPermissions: CodenvyPermissions;
 
   /**
    * Default constructor

@@ -37,7 +37,8 @@ export class CodenvyTeam {
 
     this.remoteTeamAPI = $resource('/api/organization', {}, {
       getTeams: {method: 'GET', url: '/api/organization', isArray: true},
-      createTeam: {method: 'POST', url: '/api/organization'}
+      createTeam: {method: 'POST', url: '/api/organization'},
+      findTeam: {method: 'GET', url: '/api/organization/find?name=:teamName'}
     });
   }
 
@@ -67,6 +68,21 @@ export class CodenvyTeam {
     return this.teams;
   }
 
+  fetchTeamByName(name) {
+    let promise = this.remoteTeamAPI.findTeam({'teamName' : name}).$promise;
+    return promise;
+  }
+
+  getTeamByName(name) {
+    for (let i = 0; i < this.teams.length; i++) {
+      if (this.teams[i].name === name) {
+        return this.teams[i];
+      }
+    };
+
+    return null;
+  }
+
   createTeam(name) {
     let data = {'name' : name};
     let promise = this.remoteTeamAPI.createTeam(data).$promise;
@@ -83,7 +99,6 @@ export class CodenvyTeam {
     });
     return roles;
   }
-
 
   getActionsFromRoles(roles) {
     let actions = [];

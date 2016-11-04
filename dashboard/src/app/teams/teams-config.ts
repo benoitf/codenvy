@@ -22,6 +22,12 @@ import {AddMemberController} from './invite-members/add-member/add-member.contro
 import {ListMembersController} from './invite-members/list-members.controller';
 import {ListMembers} from './invite-members/list-members.directive';
 
+
+import {ListTeamWorkspaces} from './team-details/team-workspaces/list-team-workspaces.directive';
+import {ListTeamWorkspacesController} from './team-details/team-workspaces/list-team-workspaces.controller';
+
+import {TeamDetailsController} from './team-details/team-details.controller';
+
 export class TeamsConfig {
 
   constructor(register) {
@@ -33,6 +39,18 @@ export class TeamsConfig {
     register.controller('ListMembersController', ListMembersController);
     register.directive('listMembers', ListMembers);
 
+    register.controller('ListTeamWorkspacesController', ListTeamWorkspacesController);
+    register.directive('listTeamWorkspaces', ListTeamWorkspaces);
+
+    register.controller('TeamDetailsController', TeamDetailsController);
+
+    let locationProvider = {
+      title: (params) => { return params.teamName;},
+      templateUrl: 'app/teams/team-details/team-details.html',
+      controller: 'TeamDetailsController',
+      controllerAs: 'teamDetailsController'
+    };
+
     // config routes
     register.app.config(function ($routeProvider) {
       $routeProvider.accessWhen('/team/create', {
@@ -40,8 +58,9 @@ export class TeamsConfig {
         templateUrl: 'app/teams/create-team/create-team.html',
         controller: 'CreateTeamController',
         controllerAs: 'createTeamController'
-      });
-
+      })
+      .accessWhen('/team/:teamName', locationProvider)
+      .accessWhen('/team/:teamName/:page', locationProvider);
     });
   }
 }
