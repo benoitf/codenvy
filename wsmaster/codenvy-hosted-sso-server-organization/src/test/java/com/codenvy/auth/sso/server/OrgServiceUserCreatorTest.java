@@ -14,6 +14,7 @@
  */
 package com.codenvy.auth.sso.server;
 
+import com.codenvy.api.license.server.CodenvyLicenseManager;
 import org.eclipse.che.api.core.ConflictException;
 import org.eclipse.che.api.core.NotFoundException;
 import org.eclipse.che.api.core.model.user.User;
@@ -62,12 +63,15 @@ public class OrgServiceUserCreatorTest {
     @Mock
     User createdUser;
 
+    @Mock
+    CodenvyLicenseManager licenseManager;
+
     OrgServiceUserCreator creator;
 
     @BeforeMethod
     public void setUp() throws Exception {
         final String userId = "userId123";
-        creator = new OrgServiceUserCreator(manager, profileManager, preferenceManager, true);
+        creator = new OrgServiceUserCreator(manager, profileManager, preferenceManager, licenseManager, true);
         when(profileManager.getById(userId)).thenReturn(new ProfileImpl(userId, singletonMap("phone", "123")));
         doNothing().when(profileManager).update(any());
         when(createdUser.getId()).thenReturn(userId);

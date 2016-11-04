@@ -15,6 +15,7 @@
 package com.codenvy.auth.sso.server;
 
 
+import com.codenvy.api.license.server.CodenvyLicenseManager;
 import com.codenvy.auth.sso.server.organization.UserCreator;
 
 import org.eclipse.che.api.core.ApiException;
@@ -45,19 +46,22 @@ import java.util.UUID;
 public class OrgServiceUserCreator implements UserCreator {
     private static final Logger LOG = LoggerFactory.getLogger(OrgServiceUserCreator.class);
 
-    private final UserManager       userManager;
-    private final ProfileManager    profileManager;
-    private final PreferenceManager preferenceManager;
-    private final boolean           userSelfCreationAllowed;
+    private final UserManager           userManager;
+    private final ProfileManager        profileManager;
+    private final PreferenceManager     preferenceManager;
+    private final CodenvyLicenseManager licenseManager;
+    private final boolean               userSelfCreationAllowed;
 
     @Inject
     public OrgServiceUserCreator(UserManager userManager,
                                  ProfileManager profileManager,
                                  PreferenceManager preferenceManager,
+                                 CodenvyLicenseManager licenseManager,
                                  @Named("che.auth.user_self_creation") boolean userSelfCreationAllowed) {
         this.userManager = userManager;
         this.profileManager = profileManager;
         this.preferenceManager = preferenceManager;
+        this.licenseManager = licenseManager;
         this.userSelfCreationAllowed = userSelfCreationAllowed;
     }
 
@@ -70,6 +74,8 @@ public class OrgServiceUserCreator implements UserCreator {
             if (!userSelfCreationAllowed) {
                 throw new IOException("Currently only admins can create accounts. Please contact our Admin Team for further info.");
             }
+
+            // TODO check Codenvy license
 
             final Map<String, String> attributes = new HashMap<>();
             if (firstName != null) {

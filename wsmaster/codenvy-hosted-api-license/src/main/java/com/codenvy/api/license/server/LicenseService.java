@@ -14,11 +14,12 @@
  */
 package com.codenvy.api.license.server;
 
-import com.codenvy.api.license.CodenvyLicense;
-import com.codenvy.api.license.InvalidLicenseException;
-import com.codenvy.api.license.LicenseException;
-import com.codenvy.api.license.LicenseFeature;
-import com.codenvy.api.license.LicenseNotFoundException;
+import com.codenvy.license.api.CodenvyLicense;
+import com.codenvy.license.api.InvalidLicenseException;
+import com.codenvy.license.api.LicenseException;
+import com.codenvy.license.api.LicenseFeature;
+import com.codenvy.license.api.LicenseNotFoundException;
+import com.codenvy.license.spi.UserBeyondLicenseDao;
 import com.google.common.collect.ImmutableMap;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -29,7 +30,6 @@ import org.eclipse.che.api.core.ApiException;
 import org.eclipse.che.api.core.ConflictException;
 import org.eclipse.che.api.core.NotFoundException;
 import org.eclipse.che.api.core.ServerException;
-import org.eclipse.che.api.user.server.UserManager;
 import org.eclipse.che.dto.server.JsonStringMapImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,10 +66,13 @@ public class LicenseService {
     private static final String VALUE                               = "value";
 
     private final CodenvyLicenseManager licenseManager;
+    private final UserBeyondLicenseDao  userBeyondLicenseDao;
 
     @Inject
-    public LicenseService(CodenvyLicenseManager licenseManager) {
+    public LicenseService(CodenvyLicenseManager licenseManager,
+                          UserBeyondLicenseDao userBeyondLicenseDao) {
         this.licenseManager = licenseManager;
+        this.userBeyondLicenseDao = userBeyondLicenseDao;
     }
 
     @DELETE
@@ -118,6 +121,7 @@ public class LicenseService {
     public Response storeLicense(String license) throws ApiException {
         try {
             licenseManager.store(license);
+            userBeyondLicenseDao.removeAll();
             return status(CREATED).build();
         } catch (InvalidLicenseException e) {
             throw new ConflictException(e.getMessage());

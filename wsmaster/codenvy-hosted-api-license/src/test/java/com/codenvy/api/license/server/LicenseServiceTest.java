@@ -14,12 +14,12 @@
  */
 package com.codenvy.api.license.server;
 
-import com.codenvy.api.license.CodenvyLicense;
-import com.codenvy.api.license.CodenvyLicenseFactory;
-import com.codenvy.api.license.InvalidLicenseException;
-import com.codenvy.api.license.LicenseException;
-import com.codenvy.api.license.LicenseFeature;
-import com.codenvy.api.license.LicenseNotFoundException;
+import com.codenvy.license.api.CodenvyLicense;
+import com.codenvy.license.api.CodenvyLicenseFactory;
+import com.codenvy.license.api.InvalidLicenseException;
+import com.codenvy.license.api.LicenseException;
+import com.codenvy.license.api.LicenseFeature;
+import com.codenvy.license.api.LicenseNotFoundException;
 import com.google.common.collect.ImmutableMap;
 import com.jayway.restassured.response.Response;
 

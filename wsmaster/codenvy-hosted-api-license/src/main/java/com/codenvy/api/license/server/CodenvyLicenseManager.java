@@ -14,13 +14,16 @@
  */
 package com.codenvy.api.license.server;
 
-import com.codenvy.api.license.CodenvyLicense;
-import com.codenvy.api.license.CodenvyLicenseFactory;
-import com.codenvy.api.license.InvalidLicenseException;
-import com.codenvy.api.license.LicenseException;
-import com.codenvy.api.license.LicenseNotFoundException;
+import com.codenvy.license.api.CodenvyLicense;
+import com.codenvy.license.api.CodenvyLicenseFactory;
+import com.codenvy.license.api.InvalidLicenseException;
+import com.codenvy.license.api.LicenseException;
+import com.codenvy.license.api.LicenseNotFoundException;
+import com.codenvy.license.spi.UserBeyondLicenseDao;
+import com.codenvy.license.spi.impl.UserBeyondLicenseImpl;
 import com.codenvy.swarm.client.SwarmDockerConnector;
-
+import org.eclipse.che.api.core.ConflictException;
+import org.eclipse.che.api.core.ForbiddenException;
 import org.eclipse.che.api.core.ServerException;
 import org.eclipse.che.api.user.server.UserManager;
 import org.eclipse.che.commons.annotation.Nullable;
@@ -48,6 +51,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 public class CodenvyLicenseManager {
 
     private final CodenvyLicenseFactory licenseFactory;
+    private UserBeyondLicenseDao userBeyondLicenseDao;
     private final Path                  licenseFile;
     private final UserManager           userManager;
     private final SwarmDockerConnector  dockerConnector;
@@ -56,8 +60,10 @@ public class CodenvyLicenseManager {
     public CodenvyLicenseManager(@Named("license-manager.license-file") String licenseFile,
                                  CodenvyLicenseFactory licenseFactory,
                                  UserManager userManager,
-                                 SwarmDockerConnector dockerConnector) {
+                                 SwarmDockerConnector dockerConnector,
+                                 UserBeyondLicenseDao userBeyondLicenseDao) {
         this.licenseFactory = licenseFactory;
+        this.userBeyondLicenseDao = userBeyondLicenseDao;
         this.licenseFile = Paths.get(licenseFile);
         this.userManager = userManager;
         this.dockerConnector = dockerConnector;
@@ -142,6 +148,20 @@ public class CodenvyLicenseManager {
     }
 
     /**
+     * Return true if number users complies Codenvy license terms.
+     */
+    public boolean isCodenvyUsersNumberLegal() throws ServerException, IOException {
+        long actualUsers = userManager.getTotalCount();
+
+        try {
+            CodenvyLicense codenvyLicense = load();
+            return codenvyLicense.isLicenseUsageLegal(actualUsers, 0);
+        } catch (LicenseException e) {
+            return CodenvyLicense.isFreeUsageLegal(actualUsers, 0);
+        }
+    }
+
+    /**
      * Return true if only node number meets the constrains of license properties or free usage properties.
      * If nodeNumber == null, uses actual number of machine nodes.
      *
@@ -159,5 +179,31 @@ public class CodenvyLicenseManager {
         } catch (LicenseException e) {
             return CodenvyLicense.isFreeUsageLegal(0, nodeNumber);  // user number doesn't matter
         }
+    }
+
+    /**
+     * TODO
+     * @throws ServerException
+     * @throws ForbiddenException
+     * @throws IOException
+     */
+    public void newUserVerification(String email) throws ServerException, ForbiddenException, IOException {
+        if (!isCodenvyUsersNumberLegal()) {
+            UserBeyondLicenseImpl user = new UserBeyondLicenseImpl(email);
+            try {
+                userBeyondLicenseDao.create(user);
+            } catch (ConflictException ce) {
+                // ignore error of duplication in DB
+            }
+
+            throw new ForbiddenException(
+                String.format("The user cannot be added. You have %s users in Codenvy which is the maximum allowed by your current license.",
+                              userManager.getTotalCount()));
+        }
+    }
+
+    private String getEmail(String token) {
+        // TODO
+        return null;
     }
 }

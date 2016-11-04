@@ -14,6 +14,7 @@
  */
 package com.codenvy.api.user.server;
 
+import com.codenvy.api.license.server.CodenvyLicenseManager;
 import com.codenvy.api.permission.server.SystemDomain;
 import com.jayway.restassured.response.Response;
 
@@ -83,9 +84,12 @@ public class UserServicePermissionsFilterTest {
     @Mock
     UserService service;
 
+    @Mock
+    CodenvyLicenseManager licenseManager;
+
     @BeforeMethod
     public void setUp() {
-        permissionsFilter = new UserServicePermissionsFilter(true);
+        permissionsFilter = new UserServicePermissionsFilter(true, licenseManager);
         when(subject.getUserId()).thenReturn("userok");
     }
 
