@@ -270,15 +270,15 @@ check_docker() {
   fi
 
   if [[ "${DOCKER_VERSION[0]}" != "${DOCKER_VERSION[1]}" ]]; then
-       error "Error - Docker server and client versions mismatch."
-       error "Client: ${DOCKER_VERSION[0]}, Server: ${DOCKER_VERSION[1]}."
-       return 1;
+    error "Error - Docker server and client versions mismatch."
+    error "Client: ${DOCKER_VERSION[0]}, Server: ${DOCKER_VERSION[1]}."
+    return 1;
   fi
 
  if [[ "${API_VERSION[0]}" != "${API_VERSION[1]}" ]]; then
-       error "Error - Docker server and client API versions mismatch."
-       error "Client: ${API_VERSION[0]}, Server: ${API_VERSION[1]}."
-       return 1;
+   error "Error - Docker server and client API versions mismatch."
+   error "Client: ${API_VERSION[0]}, Server: ${API_VERSION[1]}."
+   return 1;
  fi
 }
 
