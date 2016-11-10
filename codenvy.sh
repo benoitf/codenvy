@@ -259,12 +259,12 @@ check_docker() {
   DOCKER_VERSION=($(docker version |  grep  "Version:" | sed 's/Version://'))
   API_VERSION=($(docker version |  grep  "Api version:" | sed 's/API version://'))
 
-  FIRST=$(echo ${DOCKER_VERSION[0]:0:1})
-  SECOND=$(echo ${DOCKER_VERSION[0]:2:2})
+  MAJOR_VERSION_ID=$(echo ${DOCKER_VERSION[0]:0:1})
+  MINOR_VERSION_ID=$(echo ${DOCKER_VERSION[0]:2:2})
 
   # Docker needs to be greater than or equal to 1.11
-  if [[ ${FIRST} -lt 1 ]] ||
-     [[ ${SECOND} -lt 11 ]]; then
+  if [[ ${MAJOR_VERSION_ID} -lt 1 ]] ||
+     [[ ${MINOR_VERSION_ID} -lt 11 ]]; then
        error "Error - Docker 1.11+ required."
        return 1;
   fi
