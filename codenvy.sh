@@ -255,6 +255,31 @@ check_docker() {
     error "Docker issues - 'docker ps' fails."
     return 1;
   fi
+  
+  DOCKER_VERSION=($(docker version | grep -Po "(?<=Version:).*$"))
+  API_VERSION=($(docker version | grep -Po "(?<=API version:).*$"))
+
+  FIRST=$(echo ${DOCKER_VERSION[0]:0:1})
+  SECOND=$(echo ${DOCKER_VERSION[0]:2:2})
+
+  # Docker needs to be greater than or equal to 1.11
+  if [[ ${FIRST} -lt 1 ]] ||
+     [[ ${SECOND} -lt 11 ]]; then
+       error "Error - Docker 1.11+ required."
+       return 1;
+  fi
+
+  if [[ "${DOCKER_VERSION[0]}" != "${DOCKER_VERSION[1]}" ]]; then
+      error "Error - Docker server and client versions mismatch."
+      error "Client: ${DOCKER_VERSION[0]}, Server: ${DOCKER_VERSION[1]}."
+      return 1;
+  fi
+
+ if [[ "${API_VERSION[0]}" != "${API_VERSION[1]}" ]]; then
+      error "Error - Docker server and client API versions mismatch."
+      error "Client: ${API_VERSION[0]}, Server: ${API_VERSION[1]}."
+      return 1;
+ fi
 }
 
 check_docker_compose() {
@@ -274,7 +299,7 @@ check_docker_compose() {
      [[ ${SECOND} -lt 8 ]]; then
       output=$(docker-compose -version)
       error "Error - Docker Compose 1.8+ required:"
-      error "Docker compose output: ${output}"
+       error "Docker compose output: ${output}"
       return 2;
   fi
 }
