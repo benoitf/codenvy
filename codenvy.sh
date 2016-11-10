@@ -256,8 +256,8 @@ check_docker() {
     return 1;
   fi
   
-  DOCKER_VERSION=($(docker version | grep -Po "(?<=Version:).*$"))
-  API_VERSION=($(docker version | grep -Po "(?<=API version:).*$"))
+  DOCKER_VERSION=($(docker version |  grep  "Version:" | sed 's/Version://'))
+  API_VERSION=($(docker version |  grep  "Api version:" | sed 's/API version://'))
 
   FIRST=$(echo ${DOCKER_VERSION[0]:0:1})
   SECOND=$(echo ${DOCKER_VERSION[0]:2:2})
