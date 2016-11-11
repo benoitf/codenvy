@@ -19,7 +19,7 @@
                    che-delete-button-title="Delete"
                    che-on-delete="listTeamWorkspacesController.deleteSelectedWorkspaces()"
                    che-hide-delete="listTeamWorkspacesController.isNoSelected"
-                   che-hide-header="(listTeamWorkspacesController.workspaces | filter:listTeamWorkspacesController.workspaceFilter).length === 0">
+                   che-hide-header="!listTeamWorkspacesController.workspaces || (listTeamWorkspacesController.workspaces | filter:listTeamWorkspacesController.workspaceFilter).length === 0">
     <div flex="100"
          layout="row"
          layout-align="start stretch"
@@ -71,6 +71,6 @@
     <span ng-show="listTeamWorkspacesController.workspaces.length > 0 && (listTeamWorkspacesController.workspaces | filter:listTeamWorkspacesController.workspaceFilter).length === 0">
           No workspaces found.
     </span>
-    <span ng-show="listTeamWorkspacesController.workspaces.length === 0">There are no workspaces.</span>
+    <span ng-show="!listTeamWorkspacesController.workspaces || listTeamWorkspacesController.workspaces.length === 0">There are no workspaces.</span>
   </div>
 </md-content>

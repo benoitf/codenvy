@@ -31,7 +31,14 @@
         <span class="che-tab-label-title">Settings</span>
       </md-tab-label>
       <md-tab-body>
-
+        <div class="team-details-content">
+          <che-label-container class="team-details-delete-label"
+                               che-label-name="Delete Team"
+                               che-label-description="This is irreversible. Deleting your team will also destroy team workspaces and stacks.">
+            <che-button-danger che-button-title="Delete"
+                               ng-click="teamDetailsController.deleteTeam($event)"></che-button-danger>
+          </che-label-container>
+        </div>
       </md-tab-body>
     </md-tab>
 

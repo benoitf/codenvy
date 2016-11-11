@@ -67,4 +67,8 @@ export class TeamDetailsController {
     }
   }
 
+  deleteTeam() {
+
+  }
+
 }
