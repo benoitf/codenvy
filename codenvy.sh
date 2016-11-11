@@ -257,7 +257,6 @@ check_docker() {
   fi
   
   DOCKER_VERSION=($(docker version |  grep  "Version:" | sed 's/Version://'))
-  API_VERSION=($(docker version |  grep  "Api version:" | sed 's/API version://'))
 
   MAJOR_VERSION_ID=$(echo ${DOCKER_VERSION[0]:0:1})
   MINOR_VERSION_ID=$(echo ${DOCKER_VERSION[0]:2:2})
@@ -268,18 +267,6 @@ check_docker() {
        error "Error - Docker 1.11+ required."
        return 1;
   fi
-
-  if [[ "${DOCKER_VERSION[0]}" != "${DOCKER_VERSION[1]}" ]]; then
-    error "Error - Docker server and client versions mismatch."
-    error "Client: ${DOCKER_VERSION[0]}, Server: ${DOCKER_VERSION[1]}."
-    return 1;
-  fi
-
- if [[ "${API_VERSION[0]}" != "${API_VERSION[1]}" ]]; then
-   error "Error - Docker server and client API versions mismatch."
-   error "Client: ${API_VERSION[0]}, Server: ${API_VERSION[1]}."
-   return 1;
- fi
 }
 
 check_docker_compose() {
