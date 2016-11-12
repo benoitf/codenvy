@@ -39,6 +39,19 @@ cli_init() {
   DEFAULT_CODENVY_HOST=$GLOBAL_HOST_IP
   CODENVY_HOST=${CODENVY_HOST:-${DEFAULT_CODENVY_HOST}}
 
+  if [[ "${CODENVY_HOST}" = "" ]]; then
+      info "Welcome to Codenvy!"
+      info ""
+      info "We did not auto-detect a valid HOST or IP address."
+      info "Pass CODENVY_HOST with your hostname or IP address."
+      info ""
+      info "Rerun the CLI:"
+      info "  docker run -it --rm -v /var/run/docker.sock:/var/run/docker.sock"
+      info "                      -v <local-path>:/codenvy codenvy/cli"
+      info "                      -e CODENVY_HOST=<your-ip-or-hos> $@"
+      return 2;
+  fi
+
   CODENVY_VERSION_FILE="codenvy.ver"
   CODENVY_ENVIRONMENT_FILE="codenvy.env"
   CODENVY_COMPOSE_FILE="docker-compose.yml"
@@ -277,7 +290,7 @@ get_docker_install_type() {
 
 has_docker_for_windows_client(){
   debug $FUNCNAME
-  if [ $(get_docker_host_ip) = "10.0.75.2" ]; then
+  if [[ $(get_docker_host_ip) = "10.0.75.2" ]]; then
     return 0
   else
     return 1

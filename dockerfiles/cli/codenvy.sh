@@ -248,7 +248,8 @@ check_docker() {
         info "We did not detect a valid DOCKER_HOST." 
         info ""
         info "Rerun the CLI:"
-        info "  docker run -it --rm -v /var/run/docker.sock:/var/run/docker.sock <local-path>:/codenvy codenvy/cli $@"    
+        info "  docker run -it --rm -v /var/run/docker.sock:/var/run/docker.sock "
+        info "                      -v <local-path>:/codenvy codenvy/cli $@"    
         return 2;
       fi
   fi
@@ -260,7 +261,8 @@ check_docker() {
     info "We did not detect a host mounted data directory." 
     info ""
     info "Rerun the CLI:"
-    info "  docker run -it --rm -v /var/run/docker.sock:/var/run/docker.sock <local-path>:/codenvy codenvy/cli $@"    
+    info "  docker run -it --rm -v /var/run/docker.sock:/var/run/docker.sock "
+    info "                      -v <local-path>:/codenvy codenvy/cli $@"    
     return 2;
   fi
 }
