@@ -254,7 +254,6 @@ check_docker() {
   fi
 
   DATA_MOUNT=$(get_container_bind_folder)
-  echo "$DATA_MOUNT"
   if [ "${DATA_MOUNT}" = "not set" ]; then
     info "Welcome to Codenvy!"
     info ""
@@ -278,7 +277,6 @@ get_this_container_id() {
 
 get_container_host_bind_folder() {
   BINDS=$(docker inspect --format="{{.HostConfig.Binds}}" "${2}" | cut -d '[' -f 2 | cut -d ']' -f 1)
-  echo "$BINDS"
   IFS=$' '
   for SINGLE_BIND in $BINDS; do
     case $SINGLE_BIND in
