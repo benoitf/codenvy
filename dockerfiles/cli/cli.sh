@@ -91,8 +91,12 @@ cli_init() {
 
   CODENVY_MANIFEST_DIR="/version"
   CODENVY_OFFLINE_FOLDER="/codenvy/offline"
-  CODENVY_CONFIG_MANIFESTS_FOLDER="$CODENVY_CONTAINER_CONFIG/manifests"
-  CODENVY_CONFIG_MODULES_FOLDER="$CODENVY_CONTAINER_CONFIG/modules"
+
+  CODENVY_HOST_CONFIG_MANIFESTS_FOLDER="$CODENVY_HOST_CONFIG/manifests"
+  CODENVY_CONTAINER_CONFIG_MANIFESTS_FOLDER="$CODENVY_CONTAINER_CONFIG/manifests"
+
+  CODENVY_HOST_CONFIG_MODULES_FOLDER="$CODENVY_HOST_CONFIG/modules"
+  CODENVY_CONTAINER_CONFIG_MODULES_FOLDER="$CODENVY_CONTAINER_CONFIG/modules"
 
   # TODO: Change this to use the current folder or perhaps ~?
   if is_boot2docker && has_docker_for_windows_client; then
@@ -485,8 +489,8 @@ check_if_booted() {
 #TODO - is_initialized will return as initialized with empty directories
 is_initialized() {
   debug $FUNCNAME
-  if [[ -d "${CODENVY_CONFIG_MANIFESTS_FOLDER}" ]] && \
-     [[ -d "${CODENVY_CONFIG_MODULES_FOLDER}" ]] && \
+  if [[ -d "${CODENVY_CONTAINER_CONFIG_MANIFESTS_FOLDER}" ]] && \
+     [[ -d "${CODENVY_CONTAINER_CONFIG_MODULES_FOLDER}" ]] && \
      [[ -f "${REFERENCE_CONTAINER_ENVIRONMENT_FILE}" ]] && \
      [[ -f "${CODENVY_CONTAINER_CONFIG}/${CODENVY_VERSION_FILE}" ]]; then
     return 0
@@ -624,20 +628,20 @@ generate_configuration_with_puppet() {
   # Note - bug in docker requires relative path for env, not absolute
   log "docker_run -it --env-file=\"${REFERENCE_CONTAINER_ENVIRONMENT_FILE}\" \
                   -v \"${CODENVY_HOST_INSTANCE}\":/opt/codenvy:rw \
-                  -v \"${CODENVY_CONFIG_MANIFESTS_FOLDER}\":/etc/puppet/manifests:ro \
-                  -v \"${CODENVY_CONFIG_MODULES_FOLDER}\":/etc/puppet/modules:ro \
+                  -v \"${CODENVY_HOST_CONFIG_MANIFESTS_FOLDER}\":/etc/puppet/manifests:ro \
+                  -v \"${CODENVY_HOST_CONFIG_MODULES_FOLDER}\":/etc/puppet/modules:ro \
                       $IMAGE_PUPPET \
                           apply --modulepath \
                                 /etc/puppet/modules/ \
                                 /etc/puppet/manifests/codenvy.pp --show_diff \"$@\""
   docker_run -it  --env-file="${REFERENCE_CONTAINER_ENVIRONMENT_FILE}" \
                   -v "${CODENVY_HOST_INSTANCE}":/opt/codenvy:rw \
-                  -v "${CODENVY_CONFIG_MANIFESTS_FOLDER}":/etc/puppet/manifests:ro \
-                  -v "${CODENVY_CONFIG_MODULES_FOLDER}":/etc/puppet/modules:ro \
+                  -v "${CODENVY_HOST_CONFIG_MANIFESTS_FOLDER}":/etc/puppet/manifests:ro \
+                  -v "${CODENVY_HOST_CONFIG_MODULES_FOLDER}":/etc/puppet/modules:ro \
                       $IMAGE_PUPPET \
                           apply --modulepath \
                                 /etc/puppet/modules/ \
-                                /etc/puppet/manifests/codenvy.pp --show_diff "$@"
+                                /etc/puppet/manifests/codenvy.pp --show_diff "$@" >> "${LOGS}"
 }
 
 # return date in format which can be used as a unique file or dir name
@@ -784,33 +788,23 @@ cmd_config() {
     # copy codenvy development tomcat to ${CODENVY_INSTANCE} folder
     cp -r "$(get_mount_path $(echo $CODENVY_CONTAINER_DEVELOPMENT_REPO/$DEFAULT_CODENVY_DEVELOPMENT_TOMCAT-*/))" \
         "${CODENVY_CONTAINER_INSTANCE}/dev"
-
-    # generate configs and print puppet output logs to console if dev mode is on
-    generate_configuration_with_puppet
-  else
-    generate_configuration_with_puppet >> "${LOGS}"
   fi
 
-  # Replace certain environment file lines with wind
-    info "config" "Customizing docker-compose for running in a container"
-    CODENVY_ENVFILE_REGISTRY="${CODENVY_CONTAINER_INSTANCE}/config/registry/registry.env"
-    CODENVY_ENVFILE_POSTGRES="${CODENVY_CONTAINER_INSTANCE}/config/postgres/postgres.env"
-    CODENVY_ENVFILE_CODENVY="${CODENVY_CONTAINER_INSTANCE}/config/codenvy/$CHE_MINI_PRODUCT_NAME.env"
+  # Run the docker configurator
+  generate_configuration_with_puppet 
 
-    sed "s|^.*registry\.env.*$|\ \ \ \ \ \ \-\ \'${CODENVY_ENVFILE_REGISTRY}\'|" -i "${REFERENCE_CONTAINER_COMPOSE_FILE}"
-    sed "s|^.*postgres\.env.*$|\ \ \ \ \ \ \-\ \'${CODENVY_ENVFILE_POSTGRES}\'|" -i "${REFERENCE_CONTAINER_COMPOSE_FILE}"
-    sed "s|^.*codenvy\.env.*$|\ \ \ \ \ \ \-\ \'${CODENVY_ENVFILE_CODENVY}\'|" -i "${REFERENCE_CONTAINER_COMPOSE_FILE}"
+  # Replace certain environment file lines with their container counterparts
+  info "config" "Customizing docker-compose for running in a container"
+  CODENVY_ENVFILE_REGISTRY="${CODENVY_CONTAINER_INSTANCE}/config/registry/registry.env"
+  CODENVY_ENVFILE_POSTGRES="${CODENVY_CONTAINER_INSTANCE}/config/postgres/postgres.env"
+  CODENVY_ENVFILE_CODENVY="${CODENVY_CONTAINER_INSTANCE}/config/codenvy/$CHE_MINI_PRODUCT_NAME.env"
 
+  sed "s|^.*registry\.env.*$|\ \ \ \ \ \ \-\ \'${CODENVY_ENVFILE_REGISTRY}\'|" -i "${REFERENCE_CONTAINER_COMPOSE_FILE}"
+  sed "s|^.*postgres\.env.*$|\ \ \ \ \ \ \-\ \'${CODENVY_ENVFILE_POSTGRES}\'|" -i "${REFERENCE_CONTAINER_COMPOSE_FILE}"
+  sed "s|^.*codenvy\.env.*$|\ \ \ \ \ \ \-\ \'${CODENVY_ENVFILE_CODENVY}\'|" -i "${REFERENCE_CONTAINER_COMPOSE_FILE}"
+
+  # If this is windows, we need to add a special volume for postgres
   if has_docker_for_windows_client; then
-#    CODENVY_ENVFILE_REGISTRY="${CODENVY_HOST_INSTANCE}\\\config\\\registry\\\registry.env"
-#    CODENVY_ENVFILE_POSTGRES="${CODENVY_HOST_INSTANCE}\\\config\\\postgres\\\postgres.env"
-#    CODENVY_ENVFILE_CODENVY="${CODENVY_HOST_INSTANCE}\\\config\\\codenvy\\\\$CHE_MINI_PRODUCT_NAME.env"
-
-#    sed "s|^.*registry\.env.*$|\ \ \ \ \ \ \-\ \'${CODENVY_ENVFILE_REGISTRY}\'|" -i "${REFERENCE_CONTAINER_COMPOSE_FILE}"
-#    sed "s|^.*postgres\.env.*$|\ \ \ \ \ \ \-\ \'${CODENVY_ENVFILE_POSTGRES}\'|" -i "${REFERENCE_CONTAINER_COMPOSE_FILE}"
-#    sed "s|^.*codenvy\.env.*$|\ \ \ \ \ \ \-\ \'${CODENVY_ENVFILE_CODENVY}\'|" -i "${REFERENCE_CONTAINER_COMPOSE_FILE}"
-#    sed "s|^.*postgresql\/data.*$|\ \ \ \ \ \ \-\ \'codenvy-postgresql-volume\:\/var\/lib\/postgresql\/data\:Z\'|" -i "${REFERENCE_CONTAINER_COMPOSE_FILE}"
-
     sed "s|^.*postgresql\/data.*$|\ \ \ \ \ \ \-\ \'codenvy-postgresql-volume\:\/var\/lib\/postgresql\/data\:Z\'|" -i "${REFERENCE_CONTAINER_COMPOSE_FILE}"
 
     echo "" >> "${REFERENCE_CONTAINER_COMPOSE_FILE}"
@@ -823,7 +817,7 @@ cmd_config() {
     # TODO - in future, we can write synchronizer utility to copy data from win VM to host
     log "docker volume create --name=codenvy-postgresql-volume >> \"${LOGS}\""
     docker volume create --name=codenvy-postgresql-volume >> "${LOGS}"
-  fi;
+  fi
 }
 
 cmd_start() {
