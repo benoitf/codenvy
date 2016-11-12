@@ -276,17 +276,33 @@ get_this_container_id() {
 }
 
 get_container_host_bind_folder() {
+  # BINDS in the format of var/run/docker.sock:/var/run/docker.sock <path>:/codenvy  
   BINDS=$(docker inspect --format="{{.HostConfig.Binds}}" "${2}" | cut -d '[' -f 2 | cut -d ']' -f 1)
-  IFS=$' '
-  for SINGLE_BIND in $BINDS; do
-    case $SINGLE_BIND in
-      *$1)
-        echo "${SINGLE_BIND}" | cut -f1 -d":"
-      ;;
-      *)
-      ;;
-    esac
-  done
+  
+  # Remove /var/run/docker.sock:/var/run/docker.sock
+  VALUE=${BINDS/\/var\/run\/docker\.sock\:\/var\/run\/docker\.sock/}
+
+  # Remove leading and trailing spaces
+  VALUE2=$(echo "${VALUE}" | xargs)
+
+  # Remove ":/codenvy" from the end
+  VALUE3=${VALUE2%":/codenvy"}
+
+  # What is left is the mount path
+  echo $VALUE3
+
+# Previous logic of looping through each bind mount individually.
+# Does not work if the bind mount has a space in it.
+#  IFS=$' '
+#  for SINGLE_BIND in $BINDS; do
+#    case $SINGLE_BIND in
+#      *$1)
+#        echo "${SINGLE_BIND}" | cut -f1 -d":"
+#      ;;
+#      *)
+#      ;;
+#    esac
+#  done
 }
 
 grab_offline_images(){

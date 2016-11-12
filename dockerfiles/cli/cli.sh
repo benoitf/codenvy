@@ -9,10 +9,6 @@
 #   Tyler Jewell - Initial Implementation
 #
 
-# Move this into a dedicated function that is only called when the variable is absolutely
-# needed. This will speed performance for methods that do not need this value set.
-# this is the only place where we call docker instead of docker_exec because docker_exec function
-# depends on that GLOBAL_HOST_ARCH
 cli_init() {
   DEFAULT_CODENVY_VERSION="latest"
   CODENVY_IMAGE_NAME=$(docker inspect --format='{{.Config.Image}}' $(get_this_container_id))
@@ -376,12 +372,15 @@ update_image() {
 }
 
 port_open(){
-  log "netstat -an | grep 0.0.0.0:$1 >> \"${LOGS}\" 2>&1"
+#  log "netstat -an | grep 0.0.0.0:$1 >> \"${LOGS}\" 2>&1"
 #  netstat -an | grep 0.0.0.0:$1 >> "${LOGS}" 2>&1
-  docker run --rm --net host alpine netstat -an | grep ${CODENVY_HOST}:$1 >> "${LOGS}" 2>&1
-  NETSTAT_EXIT=$?
+#  docker run --rm --net host alpine netstat -an | grep ${CODENVY_HOST}:$1 >> "${LOGS}" 2>&1
 
-  if [ $NETSTAT_EXIT = 0 ]; then
+  docker run -d -p $1:$1 --name fake alpine httpd -f -p $1 -h /etc/ > /dev/null 2>&1
+  NETSTAT_EXIT=$?
+  docker rm -f fake > /dev/null 2>&1
+
+  if [ $NETSTAT_EXIT = 125 ]; then
     return 1
   else
     return 0
@@ -389,7 +388,7 @@ port_open(){
 }
 
 container_exist_by_name(){
-  docker_exec inspect ${1} > /dev/null 2>&1
+  docker inspect ${1} > /dev/null 2>&1
   if [ "$?" == "0" ]; then
     return 0
   else
@@ -398,7 +397,7 @@ container_exist_by_name(){
 }
 
 get_server_container_id() {
-  log "docker_exec inspect -f '{{.Id}}' ${1}"
+  log "docker inspect -f '{{.Id}}' ${1}"
   docker inspect -f '{{.Id}}' ${1}
 }
 
@@ -764,7 +763,7 @@ cmd_config() {
     # in development mode to avoid permissions issues we copy tomcat assembly to ${CODENVY_INSTANCE}
     # if codenvy development tomcat exist we remove it
     if [[ -d "${CODENVY_CONTAINER_INSTANCE}/dev" ]]; then
-        log "docker_exec run --rm -v \"${CODENVY_INSTANCE}/dev\":/root/dev alpine sh -c \"rm -rf /root/dev/*\""
+        log "docker_run -v \"${CODENVY_INSTANCE}/dev\":/root/dev alpine sh -c \"rm -rf /root/dev/*\""
         docker_run -v "${CODENVY_HOST_INSTANCE}/dev":/root/dev alpine sh -c "rm -rf /root/dev/*"
         log "rm -rf \"${CODENVY_HOST_INSTANCE}/dev\" >> \"${LOGS}\""
         rm -rf "${CODENVY_CONTAINER_INSTANCE}/dev"
@@ -844,7 +843,8 @@ cmd_start() {
   text   "         port 443 (https):     $(port_open 443 && echo "${GREEN}[AVAILABLE]${NC}" || echo "${RED}[ALREADY IN USE]${NC}") \n"
   text   "         port 5000 (registry): $(port_open 5000 && echo "${GREEN}[AVAILABLE]${NC}" || echo "${RED}[ALREADY IN USE]${NC}") \n"
   if ! $(port_open 80) || ! $(port_open 443) || ! $(port_open 5000); then
-    error "Ports required to run $CHE_MINI_PRODUCT_NAME are used by another program. Aborting..."
+    echo ""
+    error "Ports required to run $CHE_MINI_PRODUCT_NAME are used by another program."
     return 1;
   fi
   text "\n"
@@ -1204,10 +1204,10 @@ cmd_network() {
   info "--------   CONNECTIVITY TEST   --------"
   info "---------------------------------------"
   # Start a fake workspace agent
-  log "docker_exec run -d -p 12345:80 --name fakeagent alpine httpd -f -p 80 -h /etc/ >> \"${LOGS}\""
-  docker_exec run -d -p 12345:80 --name fakeagent alpine httpd -f -p 80 -h /etc/ >> "${LOGS}"
+  log "docker run -d -p 12345:80 --name fakeagent alpine httpd -f -p 80 -h /etc/ >> \"${LOGS}\""
+  docker run -d -p 12345:80 --name fakeagent alpine httpd -f -p 80 -h /etc/ >> "${LOGS}"
 
-  AGENT_INTERNAL_IP=$(docker_exec inspect --format='{{.NetworkSettings.IPAddress}}' fakeagent)
+  AGENT_INTERNAL_IP=$(docker inspect --format='{{.NetworkSettings.IPAddress}}' fakeagent)
   AGENT_INTERNAL_PORT=80
   AGENT_EXTERNAL_IP=$CODENVY_HOST
   AGENT_EXTERNAL_PORT=12345
@@ -1236,7 +1236,7 @@ cmd_network() {
   fi
 
   ### TEST 2: Simulate Che server ==> workspace agent (external IP) connectivity
-  export HTTP_CODE=$(docker_exec run --rm --name fakeserver \
+  export HTTP_CODE=$(docker_run --name fakeserver \
                                 --entrypoint=curl \
                                 ${IMAGE_CODENVY} \
                                   -I ${AGENT_EXTERNAL_IP}:${AGENT_EXTERNAL_PORT}/alpine-release \
@@ -1250,7 +1250,7 @@ cmd_network() {
   fi
 
   ### TEST 3: Simulate Che server ==> workspace agent (internal IP) connectivity
-  export HTTP_CODE=$(docker_exec run --rm --name fakeserver \
+  export HTTP_CODE=$(docker_run --name fakeserver \
                                 --entrypoint=curl \
                                 ${IMAGE_CODENVY} \
                                   -I ${AGENT_INTERNAL_IP}:${AGENT_INTERNAL_PORT}/alpine-release \
@@ -1263,8 +1263,8 @@ cmd_network() {
       info "Server     => Workspace Agent (Internal IP): Connection failed"
   fi
 
-  log "docker_exec rm -f fakeagent >> \"${LOGS}\""
-  docker_exec rm -f fakeagent >> "${LOGS}"
+  log "docker rm -f fakeagent >> \"${LOGS}\""
+  docker rm -f fakeagent >> "${LOGS}"
 }
 
 # Prints command that should be executed on a node to add it to swarm cluster
