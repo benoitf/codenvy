@@ -9,20 +9,8 @@
 #   Tyler Jewell - Initial Implementation
 #
 
-init_host_arch() {
-  GLOBAL_HOST_ARCH=${GLOBAL_HOST_ARCH:=$(docker version --format \{\{.Client\}\} | cut -d" " -f5)}
-}
-
-init_name_map() {
-  GLOBAL_NAME_MAP=${GLOBAL_NAME_MAP:=$(docker_exec info | grep "Name:" | cut -d" " -f2)}
-}
-
 init_host_ip() {
-  GLOBAL_HOST_IP=${GLOBAL_HOST_IP:=$(docker_exec run --net host --rm codenvy/che-ip:nightly)}
-}
-
-init_uname() {
-  GLOBAL_UNAME=${GLOBAL_UNAME:=$(docker_exec run --rm alpine sh -c "uname -r")}
+  GLOBAL_HOST_IP=${GLOBAL_HOST_IP:=$(docker_run --net host codenvy/che-ip:nightly)}
 }
 
 init_logging() {
@@ -74,7 +62,11 @@ init_logging() {
   log "$(date)"
 
   USAGE="
-Usage: ${CHE_MINI_PRODUCT_NAME} [COMMAND]
+Usage: docker run -it --rm 
+                  -v /var/run/docker.sock:/var/run/docker.sock
+                  -v <host-path-for-codenvy-data>:/codenvy
+                  ${CHE_MINI_PRODUCT_NAME}/$CHE_MINI_PRODUCT_NAME:<version> [COMMAND]
+
     help                                 This message
     version                              Installed version and upgrade paths
     init [--pull|--force|--offline]      Initializes a directory with a ${CHE_MINI_PRODUCT_NAME} configuration
@@ -96,13 +88,10 @@ Usage: ${CHE_MINI_PRODUCT_NAME} [COMMAND]
            --network ]                   Test connectivity between ${CHE_MINI_PRODUCT_NAME} sub-systems
 
 Variables:
-    CODENVY_VERSION                       Version to install for 'codenvy init'
     CODENVY_CONFIG                        Where the Codenvy config, CLI and variables are located
     CODENVY_INSTANCE                      Where ${CHE_MINI_PRODUCT_NAME} data, database, logs, are saved
     CODENVY_DEVELOPMENT_MODE              If 'on', then mounts host source folders into Docker images
     CODENVY_DEVELOPMENT_REPO              Location of host git repository that contains source code to be mounted
-    CODENVY_CLI_VERSION                   Version of CLI to run
-    CODENVY_UTILITY_VERSION               Version of ${CHE_MINI_PRODUCT_NAME} launcher, mount, dev, action to run
     CODENVY_BACKUP_FOLDER                 Location where backups files of installation are stored. Default = pwd
 "
 }
@@ -237,8 +226,8 @@ has_docker() {
   hash docker 2>/dev/null && return 0 || return 1
 }
 
-has_docker_compose() {
-  hash docker-compose 2>/dev/null && return 0 || return 1 
+has_compose() {
+  hash docker-compose 2>/dev/null && return 0 || return 1
 }
 
 has_curl() {
@@ -251,32 +240,55 @@ check_docker() {
     return 1;
   fi
 
-  if ! docker ps >> "${LOGS}" 2>&1; then
-    error "Docker issues - 'docker ps' fails."
-    return 1;
+  # If DOCKER_HOST is not set, then it should bind mounted
+  if [ -z "${DOCKER_HOST+x}" ]; then
+      if ! docker ps >> "${LOGS}" 2>&1; then
+        info "Welcome to Codenvy!"
+        info ""
+        info "We did not detect a valid DOCKER_HOST." 
+        info ""
+        info "Rerun the CLI:"
+        info "  docker run -it --rm -v /var/run/docker.sock:/var/run/docker.sock <local-path>:/codenvy codenvy/cli $@"    
+        return 2;
+      fi
+  fi
+
+  DATA_MOUNT=$(get_container_bind_folder)
+  echo "$DATA_MOUNT"
+  if [ "${DATA_MOUNT}" = "not set" ]; then
+    info "Welcome to Codenvy!"
+    info ""
+    info "We did not detect a host mounted data directory." 
+    info ""
+    info "Rerun the CLI:"
+    info "  docker run -it --rm -v /var/run/docker.sock:/var/run/docker.sock <local-path>:/codenvy codenvy/cli $@"    
+    return 2;
   fi
 }
 
-check_docker_compose() {
-  if ! has_docker_compose; then
-    error "Error - Docker Compose not found. Get it at https://docs.docker.com/compose/install/."
-    return 2;
-  fi
+get_container_bind_folder() {
+  THIS_CONTAINER_ID=$(get_this_container_id)
+  FOLDER=$(get_container_host_bind_folder ":/codenvy" $THIS_CONTAINER_ID)
+  echo "${FOLDER:=not set}"
+}
 
-  COMPOSE_VERSION=$(docker-compose -version | cut -d' ' -f3 | sed 's/,//')
-  COMPOSE_VERSION=${COMPOSE_VERSION:-1}
+get_this_container_id() {
+  hostname
+}
 
-  FIRST=$(echo ${COMPOSE_VERSION:0:1})
-  SECOND=$(echo ${COMPOSE_VERSION:2:1})
-
-  # Docker compose needs to be greater than or equal to 1.8.1
-  if [[ ${FIRST} -lt 1 ]] ||
-     [[ ${SECOND} -lt 8 ]]; then
-      output=$(docker-compose -version)
-      error "Error - Docker Compose 1.8+ required:"
-      error "Docker compose output: ${output}"
-      return 2;
-  fi
+get_container_host_bind_folder() {
+  BINDS=$(docker inspect --format="{{.HostConfig.Binds}}" "${2}" | cut -d '[' -f 2 | cut -d ']' -f 1)
+  echo "$BINDS"
+  IFS=$' '
+  for SINGLE_BIND in $BINDS; do
+    case $SINGLE_BIND in
+      *$1)
+        echo "${SINGLE_BIND}" | cut -f1 -d":"
+      ;;
+      *)
+      ;;
+    esac
+  done
 }
 
 grab_offline_images(){
@@ -340,47 +352,56 @@ grab_initial_images() {
     fi
   fi
 
-  if [ "$(docker images -q codenvy/version 2> /dev/null)" = "" ]; then
-    info "cli" "Pulling image codenvy/version"
-    log "docker pull codenvy/version >> \"${LOGS}\" 2>&1"
+  if [ "$(docker images -q docker/compose:1.8.1 2> /dev/null)" = "" ]; then
+    info "cli" "Pulling image docker/compose:1.8.1"
+    log "docker pull docker/version >> \"${LOGS}\" 2>&1"
     TEST=""
-    docker pull codenvy/version >> "${LOGS}" 2>&1 || TEST=$? 
+    docker pull docker/compose:1.8.1 >> "${LOGS}" 2>&1 || TEST=$? 
     if [ "$TEST" = "1" ]; then
-      error "Image codenvy/version not found on dockerhub or locally."
+      error "Image docker/compose not found on dockerhub or locally."
       return 1;
     fi
   fi
 }
 
 check_volume_mount() {
-  docker_exec run --rm -v $(pwd):/copy alpine sh -c "echo 'test' > /copy/test"
-  if [[ ! -f $(pwd)/test ]]; then
+  echo 'test' > /codenvy/test
+  
+  if [[ ! -f /codenvy/test ]]; then
     error "Docker installed, but unable to volume mount files from your host."
     error "Have you enabled Docker to allow mounting host directories?"
     return 1;
   fi
-  docker_exec run --rm -v $(pwd):/copy alpine sh -c "rm -rf /copy/test"
+
+  rm -rf /codenvy/test 
 }
 
-
-has_docker_for_windows_client(){
+docker_run() {
   debug $FUNCNAME
-  init_host_arch
-  if [ "${GLOBAL_HOST_ARCH}" = "windows" ]; then
-    return 0
+  # Setup options for connecting to docker host
+  if [ -z "${DOCKER_HOST+x}" ]; then
+      DOCKER_HOST="/var/run/docker.sock"
+  fi
+
+  if [ -S "$DOCKER_HOST" ]; then
+    docker run --rm -v $DOCKER_HOST:$DOCKER_HOST \
+                    -v $HOME:$HOME \
+                    -w "$(pwd)" "$@"
   else
-    return 1
+    docker run --rm -e DOCKER_HOST -e DOCKER_TLS_VERIFY -e DOCKER_CERT_PATH \
+                    -v $HOME:$HOME \
+                    -w "$(pwd)" "$@"
   fi
 }
 
-docker_exec() {
+docker_compose() {
   debug $FUNCNAME
-  if has_docker_for_windows_client; then
-    log "MSYS_NO_PATHCONV=1 docker.exe \"$@\""
-    MSYS_NO_PATHCONV=1 docker.exe "$@"
+
+  if has_compose; then
+    docker-compose "$@"
   else
-    log "$(which docker) \$@\""
-    "$(which docker)" "$@"
+    docker_run -v "${CODENVY_HOST_INSTANCE}":"${CODENVY_CONTAINER_INSTANCE}" \
+                  docker/compose:1.8.1 "$@"
   fi
 }
 
@@ -391,39 +412,6 @@ curl() {
   else
     log "$(which curl) \"$@\""
     $(which curl) "$@"
-  fi
-}
-
-update_cli() {
-  info "cli" "Downloading cli-$CHE_CLI_VERSION"
-
-  # If the che.sh is running from within the Che source repo, then 
-  # copy cli.sh from the repo to ~/.che and then return.
-  if [[ $(get_script_source_dir) != ~/."${CHE_MINI_PRODUCT_NAME}"/cli ]]; then
-    log "cp -rf $(get_script_source_dir)/cli.sh ~/.\"${CHE_MINI_PRODUCT_NAME}\"/cli/cli-$CHE_CLI_VERSION.sh"
-    cp -rf $(get_script_source_dir)/cli.sh ~/."${CHE_MINI_PRODUCT_NAME}"/cli/cli-$CHE_CLI_VERSION.sh
-    return
-  fi
-
-  # We are downloading the CLI from the hosted repository.
-  # We will download a version that is tagged from GitHub.
-  if [[ "${CHE_CLI_VERSION}" = "latest" ]] || \
-     [[ "${CHE_CLI_VERSION}" = "nightly" ]] || \
-     [[ ${CHE_CLI_VERSION:0:1} == "4" ]]; then
-    GITHUB_VERSION=master
-  else
-    GITHUB_VERSION=$CHE_CLI_VERSION
-  fi
-
-  # We are downloading the CLI from the core repository.
-  URL=https://raw.githubusercontent.com/${CHE_MINI_PRODUCT_NAME}/${CHE_MINI_PRODUCT_NAME}/$GITHUB_VERSION/cli.sh
-
-  if ! curl --output /dev/null --silent --head --fail "$URL"; then
-    error "CLI download error. Bad network or version."
-    return 1;
-  else
-    log "curl -sL $URL > ~/.\"${CHE_MINI_PRODUCT_NAME}\"/cli/cli-$CHE_CLI_VERSION.sh"
-    curl -sL $URL > ~/."${CHE_MINI_PRODUCT_NAME}"/cli/cli-$CHE_CLI_VERSION.sh
   fi
 }
 
@@ -444,20 +432,12 @@ init() {
     usage;
   fi
 
-  check_docker
-  check_docker_compose
+  check_docker "$@"
   grab_offline_images
   grab_initial_images
   check_volume_mount
 
-  # Test to see if we have cli_funcs
-  if [[ ! -f ~/."${CHE_MINI_PRODUCT_NAME}"/cli/cli-${CHE_CLI_VERSION}.sh ]] ||
-     [[ $(get_script_source_dir)/cli.sh -nt ~/."${CHE_MINI_PRODUCT_NAME}"/cli/cli-${CHE_CLI_VERSION}.sh ]]; then
-    update_cli
-  fi
-
-  log "source ~/.\"${CHE_MINI_PRODUCT_NAME}\"/cli/cli-${CHE_CLI_VERSION}.sh"
-  source ~/."${CHE_MINI_PRODUCT_NAME}"/cli/cli-${CHE_CLI_VERSION}.sh
+  source /cli/cli.sh
 }
 
 # See: https://sipb.mit.edu/doc/safe-shell/
