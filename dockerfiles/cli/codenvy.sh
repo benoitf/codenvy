@@ -74,22 +74,23 @@ Usage: docker run -it --rm
     stop                                 Stops ${CHE_MINI_PRODUCT_NAME} services
     restart [--pull|--force]             Restart ${CHE_MINI_PRODUCT_NAME} services
     destroy [--quiet]                    Stops services, and deletes ${CHE_MINI_PRODUCT_NAME} instance data
-    rmi [--quiet]                        Removes the Docker images for CODENVY_VERSION, forcing a repull
+    rmi [--quiet]                        Removes the Docker images for <version>, forcing a repull
     config                               Generates a ${CHE_MINI_PRODUCT_NAME} config from vars; run on any start / restart
     add-node                             Adds a physical node to serve workspaces intto the ${CHE_MINI_PRODUCT_NAME} cluster
     remove-node <ip>                     Removes the physical node from the ${CHE_MINI_PRODUCT_NAME} cluster
     upgrade                              Upgrades Codenvy from one version to another with migrations and backups
     download [--pull|--force|--offline]  Pulls Docker images for the current Codenvy version
-    backup [--quiet|--skip-data] Backups ${CHE_MINI_PRODUCT_NAME} configuration and data to CODENVY_BACKUP_FOLDER
-    restore [--quiet]                    Restores ${CHE_MINI_PRODUCT_NAME} configuration and data from CODENVY_BACKUP_FOLDER
+    backup [--quiet|--skip-data] Backups ${CHE_MINI_PRODUCT_NAME} configuration and data to /codenvy/backup volume mount
+    restore [--quiet]                    Restores ${CHE_MINI_PRODUCT_NAME} configuration and data from /codenvy/backup mount
     offline                              Saves ${CHE_MINI_PRODUCT_NAME} Docker images into TAR files for offline install
     info [ --all                         Run all debugging tests
            --debug                       Displays system information
            --network ]                   Test connectivity between ${CHE_MINI_PRODUCT_NAME} sub-systems
 
 Variables:
-    CODENVY_DEVELOPMENT_MODE              If 'on', then mounts host source folders into Docker images
-    CODENVY_DEVELOPMENT_REPO              Location of host git repository that contains source code to be mounted
+    CODENVY_DEVELOPMENT_MODE             If 'on', then mounts host source folders into Docker images
+    CODENVY_DEVELOPMENT_REPO             Location of host git repository that contains source code to be mounted
+    CODENVY_HOST                         IP address or hostname where ${CHE_MINI_PRODUCT_NAME} will serve its users
 "
 }
 
