@@ -10,30 +10,8 @@
 #
 
 cli_init() {
-  DEFAULT_CODENVY_VERSION="latest"
-  CODENVY_IMAGE_NAME=$(docker inspect --format='{{.Config.Image}}' $(get_this_container_id))
-  CODENVY_IMAGE_VERSION=$(echo "${CODENVY_IMAGE_NAME}" | cut -d : -f2 -s)
-
-  if [ "${CODENVY_IMAGE_VERSION}" = "" ]; then
-    CODENVY_VERSION=$DEFAULT_CODENVY_VERSION
-  else
-    CODENVY_VERSION=$CODENVY_IMAGE_VERSION
-  fi
-
   DEFAULT_CODENVY_CLI_ACTION="help"
   CODENVY_CLI_ACTION=${CODENVY_CLI_ACTION:-${DEFAULT_CODENVY_CLI_ACTION}}
-
-  DEFAULT_CODENVY_CONFIG="${DATA_MOUNT}"/config
-  CODENVY_HOST_CONFIG=${CODENVY_CONFIG:-${DEFAULT_CODENVY_CONFIG}}
-  CODENVY_CONTAINER_CONFIG="/codenvy/config"
-
-  DEFAULT_CODENVY_INSTANCE="${DATA_MOUNT}"/instance
-  CODENVY_HOST_INSTANCE=${CODENVY_INSTANCE:-${DEFAULT_CODENVY_INSTANCE}}
-  CODENVY_CONTAINER_INSTANCE="/codenvy/instance"
-
-  DEFAULT_CODENVY_BACKUP_FOLDER="${DATA_MOUNT}"
-  CODENVY_HOST_BACKUP_FOLDER=${CODENVY_BACKUP_FOLDER:-${DEFAULT_CODENVY_BACKUP_FOLDER}}
-  CODENVY_CONTAINER_BACKUP_FOLDER="/codenvy"
 
   init_host_ip
   DEFAULT_CODENVY_HOST=$GLOBAL_HOST_IP
@@ -47,8 +25,9 @@ cli_init() {
       info ""
       info "Rerun the CLI:"
       info "  docker run -it --rm -v /var/run/docker.sock:/var/run/docker.sock"
-      info "                      -v <local-path>:/codenvy codenvy/cli"
-      info "                      -e CODENVY_HOST=<your-ip-or-hos> $@"
+      info "                      -v <local-path>:/codenvy"
+      info "                      -e CODENVY_HOST=<your-ip-or-host>"
+      info "                         codenvy/cli:${CODENVY_VERSION} $@"
       return 2;
   fi
 
@@ -389,11 +368,12 @@ update_image() {
 }
 
 port_open(){
+
 #  log "netstat -an | grep 0.0.0.0:$1 >> \"${LOGS}\" 2>&1"
 #  netstat -an | grep 0.0.0.0:$1 >> "${LOGS}" 2>&1
 #  docker run --rm --net host alpine netstat -an | grep ${CODENVY_HOST}:$1 >> "${LOGS}" 2>&1
 
-  docker run -d -p $1:$1 --name fake alpine httpd -f -p $1 -h /etc/ > /dev/null 2>&1
+  docker run -d -p $1:$1 --name fake alpine:3.4 httpd -f -p $1 -h /etc/ > /dev/null 2>&1
   NETSTAT_EXIT=$?
   docker rm -f fake > /dev/null 2>&1
 
@@ -780,8 +760,8 @@ cmd_config() {
     # in development mode to avoid permissions issues we copy tomcat assembly to ${CODENVY_INSTANCE}
     # if codenvy development tomcat exist we remove it
     if [[ -d "${CODENVY_CONTAINER_INSTANCE}/dev" ]]; then
-        log "docker_run -v \"${CODENVY_INSTANCE}/dev\":/root/dev alpine sh -c \"rm -rf /root/dev/*\""
-        docker_run -v "${CODENVY_HOST_INSTANCE}/dev":/root/dev alpine sh -c "rm -rf /root/dev/*"
+        log "docker_run -v \"${CODENVY_INSTANCE}/dev\":/root/dev alpine:3.4 sh -c \"rm -rf /root/dev/*\""
+        docker_run -v "${CODENVY_HOST_INSTANCE}/dev":/root/dev alpine:3.4 sh -c "rm -rf /root/dev/*"
         log "rm -rf \"${CODENVY_HOST_INSTANCE}/dev\" >> \"${LOGS}\""
         rm -rf "${CODENVY_CONTAINER_INSTANCE}/dev"
     fi
@@ -903,10 +883,10 @@ cmd_destroy() {
   cmd_stop
 
   info "destroy" "Deleting instance and config..."
-  log "docker_run -v \"${CODENVY_HOST_CONFIG}\":/codenvy-config -v \"${CODENVY_HOST_INSTANCE}\":/codenvy-instance alpine sh -c \"rm -rf /root/codenvy-instance/* && rm -rf /root/codenvy-config/*\""
+  log "docker_run -v \"${CODENVY_HOST_CONFIG}\":/codenvy-config -v \"${CODENVY_HOST_INSTANCE}\":/codenvy-instance alpine:3.4 sh -c \"rm -rf /root/codenvy-instance/* && rm -rf /root/codenvy-config/*\""
   docker_run -v "${CODENVY_HOST_CONFIG}":/root/codenvy-config \
              -v "${CODENVY_HOST_INSTANCE}":/root/codenvy-instance \
-                alpine sh -c "rm -rf /root/codenvy-instance/* && rm -rf /root/codenvy-config/*"
+                alpine:3.4 sh -c "rm -rf /root/codenvy-instance/* && rm -rf /root/codenvy-config/*"
   log "rm -rf \"${CODENVY_CONTAINER_CONFIG}\" >> \"${LOGS}\""
   log "rm -rf \"${CODENVY_CONTAINER_INSTANCE}\" >> \"${LOGS}\""
   rm -rf "${CODENVY_CONTAINER_CONFIG}"
@@ -1006,47 +986,46 @@ cmd_backup() {
     return;
   fi
 
-  if [[ ! -d "${CODENVY_CONTAINER_BACKUP_FOLDER}" ]]; then
-    error "CODENVY_CONTAINER_BACKUP_FOLDER does not exist."
-    return;
-  fi
-
   if get_server_container_id "${CODENVY_SERVER_CONTAINER_NAME}" >> "${LOGS}" 2>&1; then
     error "$CHE_MINI_PRODUCT_NAME is running. Stop before performing a backup."
     return 2;
   fi
 
-  # check if backups already exist and if so we move it with time stamp in name
-  if [[ -f "${CODENVY_CONTAINER_BACKUP_FOLDER}/${CODENVY_CONFIG_BACKUP_FILE_NAME}" ]]; then
-    mv "${CODENVY_CONTAINER_BACKUP_FOLDER}/${CODENVY_CONFIG_BACKUP_FILE_NAME}" \
-        "${CODENVY_CONTAINER_BACKUP_FOLDER}/moved-$(get_current_date)-${CODENVY_CONFIG_BACKUP_FILE_NAME}"
+  if [[ ! -d "${CODENVY_CONTAINER_BACKUP}" ]]; then
+    mkdir -p "${CODENVY_CONTAINER_BACKUP}"
   fi
-  if [[ -f "${CODENVY_CONTAINER_BACKUP_FOLDER}/${CODENVY_INSTANCE_BACKUP_FILE_NAME}" ]]; then
-    mv "${CODENVY_CONTAINER_BACKUP_FOLDER}/${CODENVY_INSTANCE_BACKUP_FILE_NAME}" \
-        "${CODENVY_CONTAINER_BACKUP_FOLDER}/moved-$(get_current_date)-${CODENVY_INSTANCE_BACKUP_FILE_NAME}"
+
+  # check if backups already exist and if so we move it with time stamp in name
+  if [[ -f "${CODENVY_CONTAINER_BACKUP}/${CODENVY_CONFIG_BACKUP_FILE_NAME}" ]]; then
+    mv "${CODENVY_CONTAINER_BACKUP}/${CODENVY_CONFIG_BACKUP_FILE_NAME}" \
+        "${CODENVY_CONTAINER_BACKUP}/moved-$(get_current_date)-${CODENVY_CONFIG_BACKUP_FILE_NAME}"
+  fi
+  if [[ -f "${CODENVY_CONTAINER_BACKUP}/${CODENVY_INSTANCE_BACKUP_FILE_NAME}" ]]; then
+    mv "${CODENVY_CONTAINER_BACKUP}/${CODENVY_INSTANCE_BACKUP_FILE_NAME}" \
+        "${CODENVY_CONTAINER_BACKUP}/moved-$(get_current_date)-${CODENVY_INSTANCE_BACKUP_FILE_NAME}"
   fi
 
   info "backup" "Saving configuration..."
   docker_run -v "${CODENVY_HOST_CONFIG}":/root/codenvy-config \
-             -v "${CODENVY_HOST_BACKUP_FOLDER}":/root/backup \
-                 alpine sh -c "tar czf /root/backup/${CODENVY_CONFIG_BACKUP_FILE_NAME} -C /root/codenvy-config ."
+             -v "${CODENVY_HOST_BACKUP}":/root/backup \
+                 alpine:3.4 sh -c "tar czf /root/backup/${CODENVY_CONFIG_BACKUP_FILE_NAME} -C /root/codenvy-config ."
 
   info "backup" "Saving instance data..."
   # if windows we backup data volume
   if has_docker_for_windows_client; then
     docker_run -v "${CODENVY_HOST_INSTANCE}":/root/codenvy-instance \
-               -v "${CODENVY_HOST_BACKUP_FOLDER}":/root/backup \
+               -v "${CODENVY_HOST_BACKUP}":/root/backup \
                -v codenvy-postgresql-volume:/root/codenvy-instance/data/postgres \
-                 alpine sh -c "tar czf /root/backup/${CODENVY_INSTANCE_BACKUP_FILE_NAME} -C /root/codenvy-instance . --exclude=logs ${TAR_EXTRA_EXCLUDE}"
+                 alpine:3.4 sh -c "tar czf /root/backup/${CODENVY_INSTANCE_BACKUP_FILE_NAME} -C /root/codenvy-instance . --exclude=logs ${TAR_EXTRA_EXCLUDE}"
   else
     docker_run -v "${CODENVY_HOST_INSTANCE}":/root/codenvy-instance \
-              -v "${CODENVY_HOST_BACKUP_FOLDER}":/root/backup \
-                 alpine sh -c "tar czf /root/backup/${CODENVY_INSTANCE_BACKUP_FILE_NAME} -C /root/codenvy-instance . --exclude=logs ${TAR_EXTRA_EXCLUDE}"
+              -v "${CODENVY_HOST_BACKUP}":/root/backup \
+                 alpine:3.4 sh -c "tar czf /root/backup/${CODENVY_INSTANCE_BACKUP_FILE_NAME} -C /root/codenvy-instance . --exclude=logs ${TAR_EXTRA_EXCLUDE}"
   fi
 
   info ""
-  info "backup" "Configuration data saved in ${CODENVY_HOST_BACKUP_FOLDER}/${CODENVY_CONFIG_BACKUP_FILE_NAME}"
-  info "backup" "Instance data saved in ${CODENVY_HOST_BACKUP_FOLDER}/${CODENVY_INSTANCE_BACKUP_FILE_NAME}"
+  info "backup" "Configuration data saved in ${CODENVY_HOST_BACKUP}/${CODENVY_CONFIG_BACKUP_FILE_NAME}"
+  info "backup" "Instance data saved in ${CODENVY_HOST_BACKUP}/${CODENVY_INSTANCE_BACKUP_FILE_NAME}"
 }
 
 cmd_restore() {
@@ -1066,8 +1045,8 @@ cmd_restore() {
     return;
   fi
 
-  if [[ ! -f "${CODENVY_CONTAINER_BACKUP_FOLDER}/${CODENVY_CONFIG_BACKUP_FILE_NAME}" ]] || \
-     [[ ! -f "${CODENVY_CONTAINER_BACKUP_FOLDER}/${CODENVY_INSTANCE_BACKUP_FILE_NAME}" ]]; then
+  if [[ ! -f "${CODENVY_CONTAINER_BACKUP}/${CODENVY_CONFIG_BACKUP_FILE_NAME}" ]] || \
+     [[ ! -f "${CODENVY_CONTAINER_BACKUP}/${CODENVY_INSTANCE_BACKUP_FILE_NAME}" ]]; then
     error "Backup files not found. To do restore please do backup first."
     return;
   fi
@@ -1075,11 +1054,11 @@ cmd_restore() {
   # remove config and instance folders
   log "docker_run -v \"${CODENVY_HOST_CONFIG}\":/codenvy-config \
                   -v \"${CODENVY_HOST_INSTANCE}\":/codenvy-instance \
-                    alpine sh -c \"rm -rf /root/codenvy-instance/* \
+                    alpine:3.4 sh -c \"rm -rf /root/codenvy-instance/* \
                                    && rm -rf /root/codenvy-config/*\""
   docker_run -v "${CODENVY_HOST_CONFIG}":/root/codenvy-config \
              -v "${CODENVY_HOST_INSTANCE}":/root/codenvy-instance \
-                alpine sh -c "rm -rf /root/codenvy-instance/* \
+                alpine:3.4 sh -c "rm -rf /root/codenvy-instance/* \
                               && rm -rf /root/codenvy-config/*"
   log "rm -rf \"${CODENVY_CONTAINER_CONFIG}\" >> \"${LOGS}\""
   log "rm -rf \"${CODENVY_CONTAINER_INSTANCE}\" >> \"${LOGS}\""
@@ -1089,8 +1068,8 @@ cmd_restore() {
   info "restore" "Recovering configuration..."
   mkdir -p "${CODENVY_CONTAINER_CONFIG}"
   docker_run -v "${CODENVY_HOST_CONFIG}":/root/codenvy-config \
-             -v "${CODENVY_HOST_BACKUP_FOLDER}/${CODENVY_CONFIG_BACKUP_FILE_NAME}":"/root/backup/${CODENVY_CONFIG_BACKUP_FILE_NAME}" \
-               alpine sh -c "tar xf /root/backup/${CODENVY_CONFIG_BACKUP_FILE_NAME} \
+             -v "${CODENVY_HOST_BACKUP}/${CODENVY_CONFIG_BACKUP_FILE_NAME}":"/root/backup/${CODENVY_CONFIG_BACKUP_FILE_NAME}" \
+               alpine:3.4 sh -c "tar xf /root/backup/${CODENVY_CONFIG_BACKUP_FILE_NAME} \
                              -C /root/codenvy-config"
 
   info "restore" "Recovering instance data..."
@@ -1101,14 +1080,14 @@ cmd_restore() {
     log "docker volume create --name=codenvy-postgresql-volume >> \"${LOGS}\""
     docker volume create --name=codenvy-postgresql-volume >> "${LOGS}"
     docker_run -v "${CODENVY_HOST_INSTANCE}":/root/codenvy-instance \
-               -v "${CODENVY_HOST_BACKUP_FOLDER}/${CODENVY_INSTANCE_BACKUP_FILE_NAME}":"/root/backup/${CODENVY_INSTANCE_BACKUP_FILE_NAME}" \
+               -v "${CODENVY_HOST_BACKUP}/${CODENVY_INSTANCE_BACKUP_FILE_NAME}":"/root/backup/${CODENVY_INSTANCE_BACKUP_FILE_NAME}" \
               -v codenvy-postgresql-volume:/root/codenvy-instance/data/postgres \
-                 alpine sh -c "tar xf /root/backup/${CODENVY_INSTANCE_BACKUP_FILE_NAME} \
+                 alpine:3.4 sh -c "tar xf /root/backup/${CODENVY_INSTANCE_BACKUP_FILE_NAME} \
                                -C /root/codenvy-instance"
   else
     docker_run -v "${CODENVY_HOST_INSTANCE}":/root/codenvy-instance \
-               -v "${CODENVY_HOST_BACKUP_FOLDER}/${CODENVY_INSTANCE_BACKUP_FILE_NAME}":"/root/backup/${CODENVY_INSTANCE_BACKUP_FILE_NAME}" \
-                 alpine sh -c "tar xf /root/backup/${CODENVY_INSTANCE_BACKUP_FILE_NAME} \
+               -v "${CODENVY_HOST_BACKUP}/${CODENVY_INSTANCE_BACKUP_FILE_NAME}":"/root/backup/${CODENVY_INSTANCE_BACKUP_FILE_NAME}" \
+                 alpine:3.4 sh -c "tar xf /root/backup/${CODENVY_INSTANCE_BACKUP_FILE_NAME} \
                                -C /root/codenvy-instance"
   fi
 }
@@ -1184,7 +1163,7 @@ cmd_debug() {
   if [ "${CODENVY_DEVELOPMENT_MODE}" = "on" ]; then
     info "CODENVY_DEVELOPMENT_REPO  = ${CODENVY_HOST_DEVELOPMENT_REPO}"
   fi
-  info "CODENVY_BACKUP_FOLDER     = ${CODENVY_HOST_BACKUP_FOLDER}"
+  info "CODENVY_BACKUP            = ${CODENVY_HOST_BACKUP}"
   info ""
   info "-----------  PLATFORM INFO  -----------"
 #  info "CLI DEFAULT PROFILE       = $(has_default_profile && echo $(get_default_profile) || echo "not set")"
@@ -1211,8 +1190,8 @@ cmd_network() {
   info "--------   CONNECTIVITY TEST   --------"
   info "---------------------------------------"
   # Start a fake workspace agent
-  log "docker run -d -p 12345:80 --name fakeagent alpine httpd -f -p 80 -h /etc/ >> \"${LOGS}\""
-  docker run -d -p 12345:80 --name fakeagent alpine httpd -f -p 80 -h /etc/ >> "${LOGS}"
+  log "docker run -d -p 12345:80 --name fakeagent alpine:3.4 httpd -f -p 80 -h /etc/ >> \"${LOGS}\""
+  docker run -d -p 12345:80 --name fakeagent alpine:3.4 httpd -f -p 80 -h /etc/ >> "${LOGS}"
 
   AGENT_INTERNAL_IP=$(docker inspect --format='{{.NetworkSettings.IPAddress}}' fakeagent)
   AGENT_INTERNAL_PORT=80

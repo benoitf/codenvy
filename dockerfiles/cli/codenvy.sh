@@ -240,6 +240,17 @@ check_docker() {
     return 1;
   fi
 
+  # Detect version so that we can provide better error warnings
+  DEFAULT_CODENVY_VERSION="latest"
+  CODENVY_IMAGE_NAME=$(docker inspect --format='{{.Config.Image}}' $(get_this_container_id))
+  CODENVY_IMAGE_VERSION=$(echo "${CODENVY_IMAGE_NAME}" | cut -d : -f2 -s)
+
+  if [ "${CODENVY_IMAGE_VERSION}" = "" ]; then
+    CODENVY_VERSION=$DEFAULT_CODENVY_VERSION
+  else
+    CODENVY_VERSION=$CODENVY_IMAGE_VERSION
+  fi  
+
   # If DOCKER_HOST is not set, then it should bind mounted
   if [ -z "${DOCKER_HOST+x}" ]; then
       if ! docker ps >> "${LOGS}" 2>&1; then
@@ -249,27 +260,87 @@ check_docker() {
         info ""
         info "Rerun the CLI:"
         info "  docker run -it --rm -v /var/run/docker.sock:/var/run/docker.sock "
-        info "                      -v <local-path>:/codenvy codenvy/cli $@"    
+        info "                      -v <local-path>:/codenvy "
+        info "                         codenvy/cli:${CODENVY_VERSION} $@"    
         return 2;
       fi
   fi
-
+}
+  
+check_mounts() {
   DATA_MOUNT=$(get_container_bind_folder)
-  if [ "${DATA_MOUNT}" = "not set" ]; then
+  CONFIG_MOUNT=$(get_container_config_folder)
+  INSTANCE_MOUNT=$(get_container_instance_folder)
+  BACKUP_MOUNT=$(get_container_backup_folder)
+   
+  TRIAD=""
+  if [[ "${CONFIG_MOUNT}" != "not set" ]] && \
+     [[ "${INSTANCE_MOUNT}" != "not set" ]] && \
+     [[ "${BACKUP_MOUNT}" != "not set" ]]; then
+     TRIAD="set"
+  fi
+
+  if [[ "${DATA_MOUNT}" != "not set" ]]; then
+    DEFAULT_CODENVY_CONFIG="${DATA_MOUNT}"/config
+    DEFAULT_CODENVY_INSTANCE="${DATA_MOUNT}"/instance
+    DEFAULT_CODENVY_BACKUP="${DATA_MOUNT}"
+  elif [[ "${DATA_MOUNT}" = "not set" ]] && [[ "$TRIAD" = "set" ]]; then  
+    DEFAULT_CODENVY_CONFIG="${CONFIG_MOUNT}"
+    DEFAULT_CODENVY_INSTANCE="${INSTANCE_MOUNT}"
+    DEFAULT_CODENVY_BACKUP="${BACKUP_MOUNT}"
+  else
     info "Welcome to Codenvy!"
     info ""
-    info "We did not detect a host mounted data directory." 
+    info "We did not detect a host mounted data directory."
     info ""
-    info "Rerun the CLI:"
+    info "Rerun with a single path:"
     info "  docker run -it --rm -v /var/run/docker.sock:/var/run/docker.sock "
-    info "                      -v <local-path>:/codenvy codenvy/cli $@"    
+    info "                      -v <local-path>:/codenvy "
+    info "                         codenvy/cli:${CODENVY_VERSION} $@"    
+    info ""
+    info ""
+    info "Or rerun with paths for config, instance, and backup (all required):"
+    info "  docker run -it --rm -v /var/run/docker.sock:/var/run/docker.sock "
+    info "                      -v <local-config-path>:/codenvy/config "
+    info "                      -v <local-instance-path>:/codenvy/instance "
+    info "                      -v <local-backup-path>:/codenvy/backup "
+    info "                         codenvy/cli:${CODENVY_VERSION} $@"    
     return 2;
   fi
+
+  # if CONFIG_MOUNT && INSTANCE_MOUNT both set, then use those values.
+  #   Set offline to CONFIG_MOUNT
+  CODENVY_HOST_CONFIG=${CODENVY_CONFIG:-${DEFAULT_CODENVY_CONFIG}}
+  CODENVY_CONTAINER_CONFIG="/codenvy/config"
+
+  CODENVY_HOST_INSTANCE=${CODENVY_INSTANCE:-${DEFAULT_CODENVY_INSTANCE}}
+  CODENVY_CONTAINER_INSTANCE="/codenvy/instance"
+
+  CODENVY_HOST_BACKUP=${CODENVY_BACKUP:-${DEFAULT_CODENVY_BACKUP}}
+  CODENVY_CONTAINER_BACKUP="/codenvy/backup"
 }
 
 get_container_bind_folder() {
   THIS_CONTAINER_ID=$(get_this_container_id)
   FOLDER=$(get_container_host_bind_folder ":/codenvy" $THIS_CONTAINER_ID)
+  echo "${FOLDER:=not set}"
+}
+
+get_container_config_folder() {
+  THIS_CONTAINER_ID=$(get_this_container_id)
+  FOLDER=$(get_container_host_bind_folder ":/codenvy/config" $THIS_CONTAINER_ID)
+  echo "${FOLDER:=not set}"
+}
+
+get_container_instance_folder() {
+  THIS_CONTAINER_ID=$(get_this_container_id)
+  FOLDER=$(get_container_host_bind_folder ":/codenvy/instance" $THIS_CONTAINER_ID)
+  echo "${FOLDER:=not set}"
+}
+
+get_container_backup_folder() {
+  THIS_CONTAINER_ID=$(get_this_container_id)
+  FOLDER=$(get_container_host_bind_folder ":/codenvy/backup" $THIS_CONTAINER_ID)
   echo "${FOLDER:=not set}"
 }
 
@@ -287,24 +358,29 @@ get_container_host_bind_folder() {
   # Remove leading and trailing spaces
   VALUE2=$(echo "${VALUE}" | xargs)
 
-  # Remove ":/codenvy" from the end
-  VALUE3=${VALUE2%":/codenvy"}
+  # Remove $1 from the end
+# VALUE3=${VALUE2%$1}
 
   # What is left is the mount path
-  echo $VALUE3
+#  echo $VALUE3
 
-# Previous logic of looping through each bind mount individually.
-# Does not work if the bind mount has a space in it.
-#  IFS=$' '
-#  for SINGLE_BIND in $BINDS; do
-#    case $SINGLE_BIND in
-#      *$1)
-#        echo "${SINGLE_BIND}" | cut -f1 -d":"
-#      ;;
-#      *)
-#      ;;
-#    esac
-#  done
+  MOUNT=""
+  IFS=$' '
+  for SINGLE_BIND in $VALUE2; do
+    case $SINGLE_BIND in
+      *$1)
+        MOUNT="${MOUNT} ${SINGLE_BIND}"
+        echo "${MOUNT}" | cut -f1 -d":" | xargs
+      ;;
+      *)
+        if [[ ${SINGLE_BIND} != *":"* ]]; then
+          MOUNT="${MOUNT} ${SINGLE_BIND}"
+        else
+          MOUNT=""
+        fi
+      ;;
+    esac
+  done
 }
 
 grab_offline_images(){
@@ -335,24 +411,24 @@ grab_offline_images(){
 
 grab_initial_images() {
   # Prep script by getting default image
-  if [ "$(docker images -q alpine 2> /dev/null)" = "" ]; then
-    info "cli" "Pulling image alpine:latest"
-    log "docker pull alpine >> \"${LOGS}\" 2>&1"
+  if [ "$(docker images -q alpine:3.4 2> /dev/null)" = "" ]; then
+    info "cli" "Pulling image alpine:3.4"
+    log "docker pull alpine:3.4 >> \"${LOGS}\" 2>&1"
     TEST=""
-    docker pull alpine >> "${LOGS}" 2>&1 || TEST=$?
+    docker pull alpine:3.4 >> "${LOGS}" 2>&1 || TEST=$?
     if [ "$TEST" = "1" ]; then
-      error "Image alpine unavailable. Not on dockerhub or built locally."
+      error "Image alpine:3.4 unavailable. Not on dockerhub or built locally."
       return 1;
     fi
   fi
 
   if [ "$(docker images -q appropriate/curl 2> /dev/null)" = "" ]; then
-    info "cli" "Pulling image curl:latest"
-    log "docker pull appropriate/curl >> \"${LOGS}\" 2>&1"
+    info "cli" "Pulling image appropriate/curl:latest"
+    log "docker pull appropriate/curl:latest >> \"${LOGS}\" 2>&1"
     TEST=""
     docker pull appropriate/curl >> "${LOGS}" 2>&1 || TEST=$?
     if [ "$TEST" = "1" ]; then
-      error "Image appropriate/curl unavailable. Not on dockerhub or built locally."
+      error "Image appropriate/curl:latest unavailable. Not on dockerhub or built locally."
       return 1;
     fi
   fi
@@ -368,16 +444,16 @@ grab_initial_images() {
     fi
   fi
 
-  if [ "$(docker images -q docker/compose:1.8.1 2> /dev/null)" = "" ]; then
-    info "cli" "Pulling image docker/compose:1.8.1"
-    log "docker pull docker/version >> \"${LOGS}\" 2>&1"
-    TEST=""
-    docker pull docker/compose:1.8.1 >> "${LOGS}" 2>&1 || TEST=$? 
-    if [ "$TEST" = "1" ]; then
-      error "Image docker/compose not found on dockerhub or locally."
-      return 1;
-    fi
-  fi
+#  if [ "$(docker images -q docker/compose:1.8.1 2> /dev/null)" = "" ]; then
+#    info "cli" "Pulling image docker/compose:1.8.1"
+#    log "docker pull docker/compose:1.8.1 >> \"${LOGS}\" 2>&1"
+#    TEST=""
+#    docker pull docker/compose:1.8.1 >> "${LOGS}" 2>&1 || TEST=$? 
+#    if [ "$TEST" = "1" ]; then
+#      error "Image docker/compose:1.8.1 not found on dockerhub or locally."
+#      return 1;
+#    fi
+#  fi
 }
 
 check_volume_mount() {
@@ -449,6 +525,7 @@ init() {
   fi
 
   check_docker "$@"
+  check_mounts "$@"
   grab_offline_images
   grab_initial_images
   check_volume_mount
