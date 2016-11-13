@@ -237,17 +237,6 @@ check_docker() {
     return 1;
   fi
 
-  # Detect version so that we can provide better error warnings
-  DEFAULT_CODENVY_VERSION="latest"
-  CODENVY_IMAGE_NAME=$(docker inspect --format='{{.Config.Image}}' $(get_this_container_id))
-  CODENVY_IMAGE_VERSION=$(echo "${CODENVY_IMAGE_NAME}" | cut -d : -f2 -s)
-
-  if [ "${CODENVY_IMAGE_VERSION}" = "" ]; then
-    CODENVY_VERSION=$DEFAULT_CODENVY_VERSION
-  else
-    CODENVY_VERSION=$CODENVY_IMAGE_VERSION
-  fi  
-
   # If DOCKER_HOST is not set, then it should bind mounted
   if [ -z "${DOCKER_HOST+x}" ]; then
       if ! docker ps >> "${LOGS}" 2>&1; then
@@ -258,10 +247,21 @@ check_docker() {
         info "Rerun the CLI:"
         info "  docker run -it --rm -v /var/run/docker.sock:/var/run/docker.sock "
         info "                      -v <local-path>:/codenvy "
-        info "                         codenvy/cli:${CODENVY_VERSION} $@"    
+        info "                         codenvy/cli $@"    
         return 2;
       fi
   fi
+
+  # Detect version so that we can provide better error warnings
+  DEFAULT_CODENVY_VERSION="latest"
+  CODENVY_IMAGE_NAME=$(docker inspect --format='{{.Config.Image}}' $(get_this_container_id))
+  CODENVY_IMAGE_VERSION=$(echo "${CODENVY_IMAGE_NAME}" | cut -d : -f2 -s)
+
+  if [ "${CODENVY_IMAGE_VERSION}" = "" ]; then
+    CODENVY_VERSION=$DEFAULT_CODENVY_VERSION
+  else
+    CODENVY_VERSION=$CODENVY_IMAGE_VERSION
+  fi  
 }
   
 check_mounts() {
