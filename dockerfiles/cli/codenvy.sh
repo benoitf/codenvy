@@ -88,11 +88,8 @@ Usage: docker run -it --rm
            --network ]                   Test connectivity between ${CHE_MINI_PRODUCT_NAME} sub-systems
 
 Variables:
-    CODENVY_CONFIG                        Where the Codenvy config, CLI and variables are located
-    CODENVY_INSTANCE                      Where ${CHE_MINI_PRODUCT_NAME} data, database, logs, are saved
     CODENVY_DEVELOPMENT_MODE              If 'on', then mounts host source folders into Docker images
     CODENVY_DEVELOPMENT_REPO              Location of host git repository that contains source code to be mounted
-    CODENVY_BACKUP_FOLDER                 Location where backups files of installation are stored. Default = pwd
 "
 }
 
