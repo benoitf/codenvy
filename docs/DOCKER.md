@@ -1,12 +1,10 @@
 # Codenvy Installation and Operation
 Codenvy makes cloud workspaces for develoment teams. Install Codenvy as a set of Docker containers.
 
-#### Quick Start
-With Docker 1.11+ on Windows, Mac, or Linux:
-```
-docker run codenvy/cli:nightly start
-```
+### Quick Start
+With Docker 1.11+ on Windows, Mac, or Linux, run `docker run codenvy/cli:nightly start`.
 
+### TOC
 - [Beta](#beta)
 - [Getting Help](#getting-help)
 - [Getting Started](#getting-started)
@@ -222,7 +220,7 @@ Usage: docker run -it --rm
     add-node                             Adds a physical node to serve workspaces intto the codenvy cluster
     remove-node <ip>                     Removes the physical node from the codenvy cluster
     version                              Installed version and upgrade paths
-    upgrade                              Upgrades Codenvy from one version to another with migrations and backups
+    upgrade                              Upgrades Codenvy to another version with migrations and backups
     download [--pull|--force|--offline]  Pulls Docker images for the current Codenvy version
     offline                              Saves codenvy Docker images into TAR files for offline install
     backup [--quiet|--skip-data] Backups codenvy configuration and data to CODENVY_BACKUP_FOLDER
@@ -233,7 +231,7 @@ Usage: docker run -it --rm
 
 Variables:
     CODENVY_DEVELOPMENT_MODE             If 'on', then mounts host source folders into Docker images
-    CODENVY_DEVELOPMENT_REPO             Location of host git repository that contains source code to be mounted
+    CODENVY_DEVELOPMENT_REPO             Location of host git repo that contains source code to be mounted
     CODENVY_HOST                         IP address or hostname of the server Codenvy is running on 
 ```
 
@@ -467,11 +465,6 @@ We currently do not support migrating from the puppet-based configuration of Cod
 We maintain a disaster recovery [policy and best practices](http://codenvy.readme.io/v5.0/docs/disaster-recovery).
 
 ## CLI Reference
-The CLI is configured to hide most error conditions from the output screen. If you believe that Codenvy or the CLI is starting with errors, the `cli.logs` file will have all of the traces and error output from your executions.
-
-## CLI Reference
-The CLI logs command execution inside of its runtime container into `~/.codenvy/cli/cli.logs`.  
-
 The CLI is configured to hide most error conditions from the output screen. If you believe that Codenvy or the CLI is starting with errors, the `cli.logs` file will have all of the traces and error output from your executions.
 
 ### `codenvy init`
