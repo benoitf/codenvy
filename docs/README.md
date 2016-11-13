@@ -66,17 +66,13 @@ This Dockerized packaging is new. We need to add the following items for it to b
 6. We do a single-node deployment of etcd, which is used as a distributed key-value store. If your users are creating workspaces that use Docker compose syntax, there are scenarios where separate containers for a single workspace will be scheduled onto different physical nodes. With our single node implementation of etcd, those containers will not be part of the same network and cannot communicate with one another. Your users will yell at you. The current work around is to manually configure etcd, zookeeper, or Consul on each physical node before you add it into the Codenvy cluster, and then activate "overlay" networking mode in `codenvy.env` file. Contact us for guidance on how to configure this. For GA we will provide a distributed key value store that does not have this limitation.
 
 ## Getting Help
-If you run into an issue, please open a GitHub issue providing:
+If you are Codenvy customer, file a ticket through email support for a quicker response.
+
+If you run into an issue, please [open a GitHub issue](http://github.com/codenvy/codenvy/issues) providing:
 - the host distribution and release version
 - output of the `docker version` command
 - output of the `docker info` command
 - the full Docker run syntax you used for the `codenvy <command>`
-
-If you are Codenvy customer, you can also file a ticket through our email support channel for a quicker response.
-
-## Getting Started
-1. Get Docker 1.11+.
-2. Start Codenvy.
 
 ## System Requirements
 Codenvy installs on Linux, Mac and Windows. 
@@ -129,7 +125,7 @@ We have experitmented with adding 1000 physical nodes into a single physical clu
 The additional physical nodes must have Docker pre-configured similar to how you have Docker configured on the master node, including any configurations that you add for proxies or an alternative key-value store like Consul. Codenvy generates an automated script that can be run on each new node which prepares the node by installing some dependencies, adding the Codenvy SSH key, and registering itself within the Codenvy cluster.
 
 ## Installation
-Get the Codenvy CLI. The Codenvy images and supporting utilities are downloaded and maintained by the CLI. The CLI also provides utilities for downloading an offline bundle to run Codenvy while disconnected from the network.
+The Codenvy CLI (a Docker image itself) is downloaded when you perform your first `docker run codenvy/cli:<version>` command. The CLI downloads other images that run Codenvy and its supporting utilities. The CLI also provides utilities for downloading an offline bundle to run Codenvy while disconnected from the network.
 
 #### Linux:
 There is nothing additional you need to install other than Docker.
