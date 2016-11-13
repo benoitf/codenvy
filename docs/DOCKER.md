@@ -2,7 +2,10 @@
 Codenvy makes cloud workspaces for develoment teams. Install Codenvy as a set of Docker containers.
 
 ### Quick Start
-With Docker 1.11+ on Windows, Mac, or Linux, run `docker run codenvy/cli:nightly start`.
+With Docker 1.11+ on Windows, Mac, or Linux:
+```
+$ docker run codenvy/cli:nightly start`.
+```
 
 ### TOC
 - [Beta](#beta)
