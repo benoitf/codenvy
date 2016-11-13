@@ -65,7 +65,7 @@ init_logging() {
 Usage: docker run -it --rm 
                   -v /var/run/docker.sock:/var/run/docker.sock
                   -v <host-path-for-codenvy-data>:/codenvy
-                  ${CHE_MINI_PRODUCT_NAME}/$CHE_MINI_PRODUCT_NAME:<version> [COMMAND]
+                  ${CHE_MINI_PRODUCT_NAME}/cli:<version> [COMMAND]
 
     help                                 This message
     version                              Installed version and upgrade paths
