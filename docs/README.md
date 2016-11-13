@@ -150,7 +150,7 @@ You can verify that the CLI is working:
 ```
 docker run codenvy/cli:nightly help
 ```
-The CLI is bound inside of Docker images that are tagged with different versions. If you were to run `codenvy/cli:latest` this will run the latest shipping release of Codenvy and the CLI. The `CODENVY_VERSION` internal setting will be derived from the tag of the CLI that you use.
+The CLI is bound inside of Docker images that are tagged with different versions. If you were to run `codenvy/cli:latest` this will run the latest shipping release of Codenvy and the CLI. This list of all versions available can be seen by running `codenvy version` or browsing the list of [tags available in Docker Hub](https://hub.docker.com/r/codenvy/cli/tags/).
 
 #### Proxies
 You can install and operate behind a proxy. You will be operating a clustered system that is managed by Docker, and itself is managing a cluster of workspaces each with their own runtime(s). There are three proxy configurations:
@@ -184,22 +184,22 @@ While connected to the Internet and with access to DockerHub, download Codenvy's
 
 ##### Save Codenvy CLI
 ```
-docker save codenvy
+docker save codenvy/cli:<version>
 ```
 
 ##### Save Codenvy Stacks
 Out of the box, Codenvy has configured a few dozen stacks for popular programming languages and frameworks. These stacks use "recipes" which contain links to Docker images that are needed to create workspaces from these stacks. These workspace runtime images are not saved as part of `codenvy offline`. There are many of these images and they consume a lot of disk space. Most users do not require all of these stacks and most replace default stacks with custom stacks using their own Docker images. If you'd like to get the images that are associated with Codenvy's stacks:
 ```
-docker save <codenvy-stack-image-name> > offline/<base-image-name>.tar
+docker save <codenvy-stack-image-name> > backup/<base-image-name>.tar
 ```
-The list of images that Codenvy manages is sourced from Eclipse Che's [Dockerfiles repository](https://github.com/eclipse/che-dockerfiles/tree/master/recipes). Each folder is named the same way that our images are stored.  The `alpine_jdk8` folder represents the `codenvy/alpine_jdk8` Docker image, which you would save with `docker save codenvy/alpine_jdk8 > offline/alpine_jdk8.tar`.
+The list of images that Codenvy manages is sourced from Eclipse Che's [Dockerfiles repository](https://github.com/eclipse/che-dockerfiles/tree/master/recipes). Each folder is named the same way that our images are stored.  The `alpine_jdk8` folder represents the `codenvy/alpine_jdk8` Docker image, which you would save with `docker save codenvy/alpine_jdk8 > backup/alpine_jdk8.tar`.
 
 ##### Start Offline
 Extract your files to an offline computer with Docker already configured. Install the CLI files to a directory on your path and ensure that they have execution permissions. Execute the CLI in the directory that has the `offline` sub-folder which contains your tar files. Then start Codenvy in `--offline` mode:
 ```
-docker run codenvy/cli start --offline
+docker run codenvy/cli:<version> start --offline
 ```
-When invoked with the `offline` parameter, the Codenvy CLI performs a preboot sequence, which loads all saved `offline/*.tar` images including any Codenvy stack images you saved. The preboot sequence takes place before any CLI configuration, which itself depends upon Docker. The `codenvy start`, `codenvy download`, and `codenvy init` commands support `--offline` mode which triggers this preboot seequence.
+When invoked with the `--offline` parameter, the Codenvy CLI performs a preboot sequence, which loads all saved `backup/*.tar` images including any Codenvy stack images you saved. The preboot sequence takes place before any CLI configuration, which itself depends upon Docker. The `codenvy start`, `codenvy download`, and `codenvy init` commands support `--offline` mode which triggers this preboot seequence.
 
 ## Usage
 #### Syntax
@@ -207,7 +207,7 @@ When invoked with the `offline` parameter, the Codenvy CLI performs a preboot se
 Usage: docker run -it --rm
                   -v /var/run/docker.sock:/var/run/docker.sock
                   -v <host-path-for-codenvy-data>:/codenvy
-                  codenvy/codenvy:<version> [COMMAND]
+                  codenvy/cli:<version> [COMMAND]
 
     init [--pull|--force|--offline]      Initializes a directory with a codenvy configuration
     config                               Generates a codenvy config from vars; run on any start / restart
