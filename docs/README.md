@@ -1,5 +1,5 @@
 # Codenvy Installation and Operation
-Codenvy makes cloud workspaces for develoment teams. Install Codenvy as a set of Docker containers.
+Codenvy makes cloud workspaces for develoment teams. Install, run, and manage Codenvy with Docker.
 
 ### Quick Start
 With Docker 1.11+ on Windows, Mac, or Linux:
