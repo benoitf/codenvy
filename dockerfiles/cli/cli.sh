@@ -1097,14 +1097,14 @@ cmd_offline() {
   for SINGLE_IMAGE in $IMAGE_LIST; do
     VALUE_IMAGE=$(echo $SINGLE_IMAGE | cut -d'=' -f2)
     TAR_NAME=$(echo $VALUE_IMAGE | sed "s|\/|_|")
-    info "offline" "Saving $CODENVY_OFFLINE_FOLDER/$TAR_NAME.tar..."
+    info "offline" "Saving $CODENVY_HOST_BACKUP/$TAR_NAME.tar..."
     if ! $(docker save $VALUE_IMAGE > $CODENVY_OFFLINE_FOLDER/$TAR_NAME.tar); then
       error "Docker was interrupted while saving $CODENVY_OFFLINE_FOLDER/$TAR_NAME.tar"
       return 1;
     fi
   done
 
-  info "offline" "Images saved as tars in $CODENVY_OFFLINE_FOLDER"
+  info "offline" "Done!"
 }
 
 cmd_info() {
