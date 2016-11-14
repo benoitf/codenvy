@@ -88,8 +88,6 @@ Usage: docker run -it --rm
            --network ]                   Test connectivity between ${CHE_MINI_PRODUCT_NAME} sub-systems
 
 Variables:
-    CODENVY_DEVELOPMENT_MODE             If 'on', then mounts host source folders into Docker images
-    CODENVY_DEVELOPMENT_REPO             Location of host git repository that contains source code to be mounted
     CODENVY_HOST                         IP address or hostname where ${CHE_MINI_PRODUCT_NAME} will serve its users
 "
 }
@@ -270,6 +268,7 @@ check_mounts() {
   CONFIG_MOUNT=$(get_container_config_folder)
   INSTANCE_MOUNT=$(get_container_instance_folder)
   BACKUP_MOUNT=$(get_container_backup_folder)
+  REPO_MOUNT=$(get_container_repo_folder)
    
   TRIAD=""
   if [[ "${CONFIG_MOUNT}" != "not set" ]] && \
@@ -316,6 +315,46 @@ check_mounts() {
 
   CODENVY_HOST_BACKUP=${CODENVY_BACKUP:-${DEFAULT_CODENVY_BACKUP}}
   CODENVY_CONTAINER_BACKUP="/codenvy/backup"
+
+  ### DEV MODE VARIABLES
+  CODENVY_DEVELOPMENT_MODE="off"
+  if [[ "${REPO_MOUNT}" != "not set" ]]; then 
+    CODENVY_DEVELOPMENT_MODE="on"
+    CODENVY_HOST_DEVELOPMENT_REPO="${REPO_MOUNT}"
+    CODENVY_CONTAINER_DEVELOPMENT_REPO="/repo"
+
+    DEFAULT_CODENVY_DEVELOPMENT_TOMCAT="assembly/onpremises-ide-packaging-tomcat-codenvy-allinone/target/onpremises-ide-packaging-tomcat-codenvy-allinone"
+    CODENVY_DEVELOPMENT_TOMCAT="${CODENVY_CONTAINER_INSTANCE}/dev"
+
+    if [[ ! -d "${CODENVY_CONTAINER_DEVELOPMENT_REPO}"  ]] || [[ ! -d "${CODENVY_CONTAINER_DEVELOPMENT_REPO}/assembly" ]]; then
+      info "Welcome to Codenvy!"
+      info ""
+      info "You volume mounted :/repo, but we did not detect a valid Codenvy source repo."
+      info ""
+      info "Rerun with a single path:"
+      info "  docker run -it --rm -v /var/run/docker.sock:/var/run/docker.sock"
+      info "                      -v <local-path>:/codenvy"
+      info "                      -v <local-repo>:/repo"
+      info "                         codenvy/cli:${CODENVY_VERSION} $@"    
+      info ""
+      info ""
+      info "Or rerun with paths for config, instance, and backup (all required):"
+      info "  docker run -it --rm -v /var/run/docker.sock:/var/run/docker.sock "
+      info "                      -v <local-config-path>:/codenvy/config "
+      info "                      -v <local-instance-path>:/codenvy/instance "
+      info "                      -v <local-backup-path>:/codenvy/backup "
+      info "                      -v <local-repo>:/repo"
+      info "                         codenvy/cli:${CODENVY_VERSION} $@"    
+      return 2
+    fi
+    if [[ ! -d $(echo "${CODENVY_CONTAINER_DEVELOPMENT_REPO}"/"${DEFAULT_CODENVY_DEVELOPMENT_TOMCAT}"-*/) ]]; then
+      info "Welcome to Codenvy!"
+      info ""
+      info "You volume mounted a valid Codenvy repo to :/repo, but we could not find a Tomcat assembly."
+      info "Have you built /assembly/onpremises-ide-packaging-tomcat-codenvy-allinone?"
+      return 2
+    fi
+  fi
 }
 
 get_container_bind_folder() {
@@ -339,6 +378,12 @@ get_container_instance_folder() {
 get_container_backup_folder() {
   THIS_CONTAINER_ID=$(get_this_container_id)
   FOLDER=$(get_container_host_bind_folder ":/codenvy/backup" $THIS_CONTAINER_ID)
+  echo "${FOLDER:=not set}"
+}
+
+get_container_repo_folder() {
+  THIS_CONTAINER_ID=$(get_this_container_id)
+  FOLDER=$(get_container_host_bind_folder ":/repo" $THIS_CONTAINER_ID)
   echo "${FOLDER:=not set}"
 }
 

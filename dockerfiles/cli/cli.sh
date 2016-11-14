@@ -44,30 +44,6 @@ cli_init() {
   REFERENCE_CONTAINER_ENVIRONMENT_FILE="${CODENVY_CONTAINER_CONFIG}/${CODENVY_ENVIRONMENT_FILE}"
   REFERENCE_CONTAINER_COMPOSE_FILE="${CODENVY_CONTAINER_INSTANCE}/${CODENVY_COMPOSE_FILE}"
 
-  ### DEV MODE VARIABLES
-  DEFAULT_CODENVY_DEVELOPMENT_REPO="$DATA_MOUNT"
-  CODENVY_HOST_DEVELOPMENT_REPO=${CODENVY_DEVELOPMENT_REPO:-${DEFAULT_CODENVY_DEVELOPMENT_REPO}}
-  CODENVY_CONTAINER_DEVELOPMENT_REPO="/codenvy"
-
-  DEFAULT_CODENVY_DEVELOPMENT_TOMCAT="assembly/onpremises-ide-packaging-tomcat-codenvy-allinone/target/onpremises-ide-packaging-tomcat-codenvy-allinone"
-  CODENVY_DEVELOPMENT_TOMCAT="${CODENVY_CONTAINER_INSTANCE}/dev"
-
-  DEFAULT_CODENVY_DEVELOPMENT_MODE="off"
-  CODENVY_DEVELOPMENT_MODE=${CODENVY_DEVELOPMENT_MODE:-${DEFAULT_CODENVY_DEVELOPMENT_MODE}}
-
-  if [ "${CODENVY_DEVELOPMENT_MODE}" == "on" ]; then
-    if [[ ! -d "${CODENVY_CONTAINER_DEVELOPMENT_REPO}"  ]] || [[ ! -d "${CODENVY_CONTAINER_DEVELOPMENT_REPO}/assembly" ]]; then
-      info "cli" "Development mode is on and could not find valid repo or packaged assembly"
-      info "cli" "Please launch codenvy.sh from the codenvy repo or set CODENVY_DEVELOPMENT_REPO to the root of your git clone repo"
-      return 2
-    fi
-    if [[ ! -d $(echo "${CODENVY_CONTAINER_DEVELOPMENT_REPO}"/"${DEFAULT_CODENVY_DEVELOPMENT_TOMCAT}"-*/) ]]; then
-      info "cli" "Development mode is on and could not find valid Tomcat assembly"
-      info "cli" "Have you built /assembly/onpremises-ide-packaging-tomcat-codenvy-allinone yet?"
-      return 2
-    fi
-  fi
-
   CODENVY_MANIFEST_DIR="/version"
   CODENVY_OFFLINE_FOLDER="/codenvy/backup"
 
@@ -448,7 +424,7 @@ check_if_booted() {
   wait_until_container_is_running 20 ${CURRENT_CODENVY_SERVER_CONTAINER_ID}
   if ! container_is_running ${CURRENT_CODENVY_SERVER_CONTAINER_ID}; then
     error "(${CHE_MINI_PRODUCT_NAME} start): Timeout waiting for ${CHE_MINI_PRODUCT_NAME} container to start."
-    return 1
+    return 2
   fi
 
   info "start" "Server logs at \"docker logs -f ${CODENVY_SERVER_CONTAINER_NAME}\""
@@ -458,11 +434,16 @@ check_if_booted() {
   if server_is_booted ${CURRENT_CODENVY_SERVER_CONTAINER_ID}; then
     info "start" "Booted and reachable"
     info "start" "Ver: $(get_installed_version)"
-    info "start" "Use: http://${CODENVY_HOST}"
-    info "start" "API: http://${CODENVY_HOST}/swagger"
+    if ! is_docker_for_mac; then
+      info "start" "Use: http://${CODENVY_HOST}"
+      info "start" "API: http://${CODENVY_HOST}/swagger"
+    else
+      info "start" "Use: http://localhost"
+      info "start" "API: http://localhost/swagger"
+    fi
   else
     error "(${CHE_MINI_PRODUCT_NAME} start): Timeout waiting for server. Run \"docker logs ${CODENVY_SERVER_CONTAINER_NAME}\" to inspect the issue."
-    return 1
+    return 2
   fi
 }
 
@@ -708,8 +689,8 @@ cmd_init() {
   if [ "${CODENVY_DEVELOPMENT_MODE}" == "on" ]; then
     sed -i'.bak' "s|#CODENVY_ENVIRONMENT=.*|CODENVY_ENVIRONMENT=development|" "${REFERENCE_CONTAINER_ENVIRONMENT_FILE}"
     info "init" "  CODENVY_ENVIRONMENT=development"
-    sed -i'.bak' "s|#CODENVY_DEVELOPMENT_REPO=.*|CODENVY_DEVELOPMENT_REPO=${CODENVY_DEVELOPMENT_REPO}|" "${REFERENCE_CONTAINER_ENVIRONMENT_FILE}"
-    info "init" "  CODENVY_DEVELOPMENT_REPO=${CODENVY_DEVELOPMENT_REPO}"
+    sed -i'.bak' "s|#CODENVY_DEVELOPMENT_REPO=.*|CODENVY_DEVELOPMENT_REPO=${CODENVY_HOST_DEVELOPMENT_REPO}|" "${REFERENCE_CONTAINER_ENVIRONMENT_FILE}"
+    info "init" "  CODENVY_DEVELOPMENT_REPO=${CODENVY_HOST_DEVELOPMENT_REPO}"
     sed -i'.bak' "s|#CODENVY_DEVELOPMENT_TOMCAT=.*|CODENVY_DEVELOPMENT_TOMCAT=${CODENVY_DEVELOPMENT_TOMCAT}|" "${REFERENCE_CONTAINER_ENVIRONMENT_FILE}"
     info "init" "  CODENVY_DEVELOPMENT_TOMCAT=${CODENVY_DEVELOPMENT_TOMCAT}"
   else
