@@ -21,8 +21,6 @@ import com.codenvy.api.permission.server.spi.PermissionsDao;
 import com.google.inject.TypeLiteral;
 import com.google.inject.persist.jpa.JpaPersistModule;
 
-import org.eclipse.che.api.core.jdbc.jpa.eclipselink.EntityListenerInjectionManagerInitializer;
-import org.eclipse.che.api.core.jdbc.jpa.guice.JpaInitializer;
 import org.eclipse.che.api.machine.server.jpa.JpaRecipeDao;
 import org.eclipse.che.api.machine.server.recipe.RecipeImpl;
 import org.eclipse.che.api.machine.server.spi.RecipeDao;
@@ -40,8 +38,6 @@ public class RecipePermissionsTckModule extends TckModule {
     @Override
     protected void configure() {
         install(new JpaPersistModule("main"));
-        bind(JpaInitializer.class).asEagerSingleton();
-        bind(EntityListenerInjectionManagerInitializer.class).asEagerSingleton();
         bind(TckResourcesCleaner.class).to(JpaCleaner.class);
 
         bind(new TypeLiteral<AbstractPermissionsDomain<RecipePermissionsImpl>>() {}).to(RecipePermissionsDaoTest.TestDomain.class);

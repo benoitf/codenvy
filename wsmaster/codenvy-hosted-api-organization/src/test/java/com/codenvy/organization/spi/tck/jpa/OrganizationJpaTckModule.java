@@ -28,8 +28,6 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.name.Names;
 import com.google.inject.persist.jpa.JpaPersistModule;
 
-import org.eclipse.che.api.core.jdbc.jpa.eclipselink.EntityListenerInjectionManagerInitializer;
-import org.eclipse.che.api.core.jdbc.jpa.guice.JpaInitializer;
 import org.eclipse.che.api.user.server.model.impl.UserImpl;
 import org.eclipse.che.api.user.server.spi.UserDao;
 import org.eclipse.che.commons.test.tck.JpaCleaner;
@@ -46,8 +44,6 @@ public class OrganizationJpaTckModule extends TckModule {
     @Override
     protected void configure() {
         install(new JpaPersistModule("main"));
-        bind(JpaInitializer.class).asEagerSingleton();
-        bind(EntityListenerInjectionManagerInitializer.class).asEagerSingleton();
         bind(TckResourcesCleaner.class).to(JpaCleaner.class);
 
         bind(new TypeLiteral<AbstractPermissionsDomain<MemberImpl>>() {}).to(OrganizationDomain.class);

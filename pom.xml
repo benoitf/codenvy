@@ -65,7 +65,7 @@
         <org.apache.apacheds.version>1.5.7</org.apache.apacheds.version>
         <org.apache.karaf.version>3.0.2</org.apache.karaf.version>
         <org.apache.sshd.version>0.9.0</org.apache.sshd.version>
-        <org.flyway.version>3.1</org.flyway.version>
+        <org.flyway.version>4.0.3</org.flyway.version>
         <org.ldaptive.version>1.2.0</org.ldaptive.version>
         <org.mongodb.version>3.2.1</org.mongodb.version>
         <org.osgi.version>5.0.0</org.osgi.version>
@@ -557,6 +557,11 @@
                 <version>${project.version}</version>
             </dependency>
             <dependency>
+                <groupId>com.codenvy.onpremises.wsmaster</groupId>
+                <artifactId>codenvy-sql-schema</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>com.codenvy.platform-api-client-java</groupId>
                 <artifactId>codenvy-platform-api-client-java-api</artifactId>
                 <version>${project.version}</version>
@@ -844,12 +849,12 @@
             </dependency>
             <dependency>
                 <groupId>org.eclipse.che.core</groupId>
-                <artifactId>che-core-api-jdbc</artifactId>
+                <artifactId>che-core-db</artifactId>
                 <version>${che.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.eclipse.che.core</groupId>
-                <artifactId>che-core-api-jdbc-vendor-h2</artifactId>
+                <artifactId>che-core-db-vendor-h2</artifactId>
                 <version>${che.version}</version>
             </dependency>
             <dependency>

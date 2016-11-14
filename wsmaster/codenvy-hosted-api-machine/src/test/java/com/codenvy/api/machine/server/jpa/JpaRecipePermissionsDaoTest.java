@@ -21,8 +21,6 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.persist.jpa.JpaPersistModule;
 
-import org.eclipse.che.api.core.jdbc.jpa.eclipselink.EntityListenerInjectionManagerInitializer;
-import org.eclipse.che.api.core.jdbc.jpa.guice.JpaInitializer;
 import org.eclipse.che.api.machine.server.recipe.RecipeImpl;
 import org.eclipse.che.api.user.server.model.impl.UserImpl;
 import org.testng.annotations.AfterClass;
@@ -194,8 +192,6 @@ public class JpaRecipePermissionsDaoTest {
             JpaPersistModule main = new JpaPersistModule("main");
             main.properties(properties);
             install(main);
-            bind(JpaInitializer.class).asEagerSingleton();
-            bind(EntityListenerInjectionManagerInitializer.class).asEagerSingleton();
         }
     }
 
