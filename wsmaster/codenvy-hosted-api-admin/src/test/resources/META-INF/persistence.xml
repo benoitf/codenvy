@@ -33,7 +33,7 @@
             <property name="javax.persistence.jdbc.user" value=""/>
             <property name="javax.persistence.jdbc.password" value=""/>
 
-            <property name="eclipselink.exception-handler" value="org.eclipse.che.core.db..h2.jpa.eclipselink.H2ExceptionHandler"/>
+            <property name="eclipselink.exception-handler" value="org.eclipse.che.core.db.h2.jpa.eclipselink.H2ExceptionHandler"/>
             <property name="eclipselink.target-server" value="None"/>
             <property name="eclipselink.logging.logger" value="DefaultLogger"/>
             <property name="eclipselink.logging.level" value="SEVERE"/>

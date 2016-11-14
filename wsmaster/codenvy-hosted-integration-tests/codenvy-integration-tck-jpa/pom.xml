@@ -217,7 +217,8 @@
                                         codenvy-hosted-api-workspace,
                                         codenvy-hosted-api-organization,
                                         codenvy-hosted-api-resource,
-                                        codenvy-hosted-api-permission</includeArtifactIds>
+                                        codenvy-hosted-api-permission,
+                                        che-core-api-factory</includeArtifactIds>
                                     <includeScope>test</includeScope>
                                 </configuration>
                             </execution>
