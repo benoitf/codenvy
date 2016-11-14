@@ -19,7 +19,6 @@ import com.codenvy.api.machine.server.recipe.RecipePermissionsImpl;
 import com.codenvy.api.machine.server.spi.tck.RecipePermissionsDaoTest;
 import com.codenvy.api.permission.server.AbstractPermissionsDomain;
 import com.codenvy.api.permission.server.SystemDomain;
-import com.codenvy.api.permission.server.jpa.AbstractJpaPermissionsDao;
 import com.codenvy.api.permission.server.jpa.JpaSystemPermissionsDao;
 import com.codenvy.api.permission.server.model.impl.SystemPermissionsImpl;
 import com.codenvy.api.permission.server.spi.PermissionsDao;
@@ -51,8 +50,6 @@ import com.google.inject.persist.jpa.JpaPersistModule;
 import org.eclipse.che.account.spi.AccountDao;
 import org.eclipse.che.account.spi.AccountImpl;
 import org.eclipse.che.account.spi.jpa.JpaAccountDao;
-import org.eclipse.che.api.core.jdbc.jpa.eclipselink.EntityListenerInjectionManagerInitializer;
-import org.eclipse.che.api.core.jdbc.jpa.guice.JpaInitializer;
 import org.eclipse.che.api.core.model.workspace.WorkspaceConfig;
 import org.eclipse.che.api.factory.server.jpa.JpaFactoryDao;
 import org.eclipse.che.api.factory.server.model.impl.FactoryImpl;
@@ -83,14 +80,19 @@ import org.eclipse.che.api.workspace.server.model.impl.stack.StackImpl;
 import org.eclipse.che.api.workspace.server.spi.StackDao;
 import org.eclipse.che.api.workspace.server.spi.WorkspaceDao;
 import org.eclipse.che.commons.lang.Pair;
+import org.eclipse.che.commons.test.db.H2JpaCleaner;
 import org.eclipse.che.commons.test.tck.JpaCleaner;
 import org.eclipse.che.commons.test.tck.TckModule;
 import org.eclipse.che.commons.test.tck.TckResourcesCleaner;
 import org.eclipse.che.commons.test.tck.repository.JpaTckRepository;
 import org.eclipse.che.commons.test.tck.repository.TckRepository;
 import org.eclipse.che.commons.test.tck.repository.TckRepositoryException;
+import org.eclipse.che.core.db.DBInitializer;
+import org.eclipse.che.core.db.schema.SchemaInitializer;
+import org.eclipse.che.core.db.schema.impl.flyway.FlywaySchemaInitializer;
 import org.eclipse.che.security.PasswordEncryptor;
 import org.eclipse.che.security.SHA512PasswordEncryptor;
+import org.postgresql.ds.PGSimpleDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -157,9 +159,14 @@ public class JpaIntegrationTckModule extends TckModule {
         JpaPersistModule main = new JpaPersistModule("main");
         main.properties(properties);
         install(main);
-
-        bind(JpaInitializer.class).asEagerSingleton();
-        bind(EntityListenerInjectionManagerInitializer.class).asEagerSingleton();
+        final PGSimpleDataSource dataSource = new PGSimpleDataSource();
+        dataSource.setUser(dbUser);
+        dataSource.setPassword(dbPassword);
+        dataSource.setUrl(dbUrl);
+        bind(SchemaInitializer.class).toInstance(new FlywaySchemaInitializer(dataSource,
+                                                                             "che-schema",
+                                                                             "codenvy-schema"));
+        bind(DBInitializer.class).asEagerSingleton();
         bind(TckResourcesCleaner.class).to(JpaCleaner.class);
 
         //repositories
