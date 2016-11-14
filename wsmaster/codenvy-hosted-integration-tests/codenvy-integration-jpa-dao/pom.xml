@@ -63,12 +63,12 @@
         </dependency>
         <dependency>
             <groupId>org.eclipse.che.core</groupId>
-            <artifactId>che-core-db</artifactId>
+            <artifactId>che-core-commons-test</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.eclipse.che.core</groupId>
-            <artifactId>che-core-commons-test</artifactId>
+            <artifactId>che-core-db</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
