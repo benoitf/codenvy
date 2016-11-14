@@ -849,6 +849,12 @@
             </dependency>
             <dependency>
                 <groupId>org.eclipse.che.core</groupId>
+                <artifactId>che-core-api-user</artifactId>
+                <version>${che.version}</version>
+                <classifier>tests</classifier>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.che.core</groupId>
                 <artifactId>che-core-db</artifactId>
                 <version>${che.version}</version>
             </dependency>
@@ -856,12 +862,6 @@
                 <groupId>org.eclipse.che.core</groupId>
                 <artifactId>che-core-db-vendor-h2</artifactId>
                 <version>${che.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.eclipse.che.core</groupId>
-                <artifactId>che-core-api-user</artifactId>
-                <version>${che.version}</version>
-                <classifier>tests</classifier>
             </dependency>
             <dependency>
                 <groupId>org.eclipse.che.lib</groupId>
