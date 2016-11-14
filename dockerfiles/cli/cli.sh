@@ -792,8 +792,13 @@ cmd_start() {
        info "start" "$CHE_MINI_PRODUCT_NAME is already running"
        info "start" "Server logs at \"docker logs -f ${CODENVY_SERVER_CONTAINER_NAME}\""
        info "start" "Ver: $(get_installed_version)"
-       info "start" "Use: http://${CODENVY_HOST}"
-       info "start" "API: http://${CODENVY_HOST}/swagger"
+       if ! is_docker_for_mac; then
+         info "start" "Use: http://${CODENVY_HOST}"
+         info "start" "API: http://${CODENVY_HOST}/swagger"
+       else
+         info "start" "Use: http://localhost"
+         info "start" "API: http://localhost/swagger"
+       fi
        return
     fi
   fi
